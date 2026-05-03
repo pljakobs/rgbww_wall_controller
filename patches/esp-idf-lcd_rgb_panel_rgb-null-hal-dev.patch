@@ -1,0 +1,20 @@
+diff --git a/components/esp_lcd/src/esp_lcd_panel_rgb.c b/components/esp_lcd/src/esp_lcd_panel_rgb.c
+index e0c8ffb32f..14572c19c4 100644
+--- a/components/esp_lcd/src/esp_lcd_panel_rgb.c
++++ b/components/esp_lcd/src/esp_lcd_panel_rgb.c
+@@ -180,7 +180,14 @@ static esp_err_t lcd_rgb_panel_alloc_frame_buffers(const esp_lcd_rgb_panel_confi
+ 
+ static esp_err_t lcd_rgb_panel_destory(esp_rgb_panel_t *rgb_panel)
+ {
+-    lcd_ll_enable_clock(rgb_panel->hal.dev, false);
++    // hal.dev is set by lcd_hal_init(), which is called *after*
++    // lcd_rgb_panel_alloc_frame_buffers() in esp_lcd_new_rgb_panel().
++    // If the panel was only partially constructed (i.e. the allocation failed
++    // before lcd_hal_init() ran), hal.dev is still NULL and dereferencing it
++    // causes a LoadProhibited crash.  Guard the call accordingly.
++    if (rgb_panel->hal.dev) {
++        lcd_ll_enable_clock(rgb_panel->hal.dev, false);
++    }
+     if (rgb_panel->panel_id >= 0) {
+         PERIPH_RCC_RELEASE_ATOMIC(lcd_periph_signals.panels[rgb_panel->panel_id].module, ref_count) {
+             if (ref_count == 0) {

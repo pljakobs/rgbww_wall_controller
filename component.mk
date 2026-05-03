@@ -18,7 +18,7 @@ export COMPONENT_SEARCH_DIRS := \
     $(CURDIR)/libs/esp-iot-solution/components/display/lcd \
     $(CURDIR)/..
 
-COMPONENT_DEPENDS := esp_lcd_adapter rgbww
+COMPONENT_DEPENDS := esp_lcd_adapter rgbww touch_driver_gt911
 
 ## esp_lcd and esp_psram are added to the Sming SDK_COMPONENTS list in
 ## /opt/sming/Sming/Arch/Esp32/Components/esp32/component.mk so they are
@@ -48,6 +48,9 @@ endif
 COMPONENT_SRCDIRS := \
     app \
     src \
+    src/ui_codegen/generated \
     src/Arch/$(SMING_ARCH)
 
-COMPONENT_INCDIRS := $(COMPONENT_SRCDIRS)  
+COMPONENT_INCDIRS := \
+    $(COMPONENT_SRCDIRS) \
+    src/ui_codegen

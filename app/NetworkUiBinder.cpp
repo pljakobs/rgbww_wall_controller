@@ -48,11 +48,30 @@ void NetworkUiBinder::bind()
             wifiFlow_->onWifiDisconnected();
         }
     });
+
+    // Coalesce mDNS burst updates: arm a 300 ms one-shot timer on each change;
+    // successive arrivals within the window just restart it.
+    wifi_.setNeighboursChangedCallback([this]() {
+        neighbourDebounce_.initializeMs<300>(
+            [](void* self) { static_cast<NetworkUiBinder*>(self)->pushNeighboursOnUiThread(); },
+            this).start(true);
+    });
 }
 
 void NetworkUiBinder::syncState()
 {
     push_network_state(ui_, wifi_);
+}
+
+void NetworkUiBinder::pushNeighboursOnUiThread()
+{
+    runtime_.runOnUiThread([this]() {
+        std::vector<ui::screens::NetworkInfoScreen::Neighbour> neighbours;
+        for (const auto& n : wifi_.visibleNeighbours()) {
+            neighbours.push_back({n.name, n.ip});
+        }
+        ui_.setNeighbours(neighbours);
+    });
 }
 
 } // namespace lightinator

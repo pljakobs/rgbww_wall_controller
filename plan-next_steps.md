@@ -118,7 +118,7 @@ Suggested implementation order:
 
 1. ✅ Implement visible-screen gating first (quick win).
 2. ✅ Add snapshot diff checks in presenter.
-3. Add neighbour-list-specific throttling and coalescing.
+3. ✅ Add neighbour-list-specific throttling and coalescing (300 ms debounce in NetworkUiBinder; Controllers fires onChange callback on add/update/expire).
 4. ✅ Remove remaining unconditional timer-driven UI pushes.
 
 

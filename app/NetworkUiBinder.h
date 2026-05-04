@@ -19,10 +19,13 @@ public:
     void syncState();
 
 private:
+    void pushNeighboursOnUiThread();
+
     ui::AppUi&         ui_;
     AppWIFI&           wifi_;
     ui::WifiConfigFlow* wifiFlow_;
     UiRuntimeService&  runtime_;
+    SimpleTimer        neighbourDebounce_;
 };
 
 } // namespace lightinator

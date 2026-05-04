@@ -32,7 +32,7 @@ bool AppUi::init()
     lv_obj_set_style_pad_all(root_, 0, 0);
 
     currentColor_ = core::clampHsv(currentColor_);
-    navigator_ = std::make_unique<AppNavigator>(root_, state_, currentColor_);
+    navigator_ = std::make_unique<AppNavigator>(root_, state_, currentColor_, theme_);
     navigator_->setOnNetworkInfoScreenChanged(
         [this](screens::NetworkInfoScreen* screen) {
             networkInfoPresenter_.bind(screen);

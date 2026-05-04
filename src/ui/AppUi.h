@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "ui/core/HsvColor.h"
+#include "ui/core/UiTheme.h"
 #include "ui/UiStateStore.h"
 #include "ui/AppNavigator.h"
 #include "ui/NetworkInfoPresenter.h"
@@ -38,6 +39,7 @@ public:
 
 private:
     core::HsvColor currentColor_;
+    core::UiTheme  theme_;
     UiStateStore state_;
     NetworkInfoPresenter networkInfoPresenter_;
 

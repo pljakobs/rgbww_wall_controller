@@ -1,0 +1,25 @@
+{
+    "name": "standard",
+    "base_config": "standard",
+    "options": [],
+    "devices": {
+        "spiFlash": {
+            "size": "16M"
+        }
+    },
+    "partitions": {
+        "factory": {
+            "size": "2M"
+        },
+        "lfs": {
+            "device": "spiFlash",
+            "address": "0x00f80000",
+            "size": "512K",
+            "type": "data",
+            "subtype": "littlefs",
+            "readonly": false,
+            "encrypted": false,
+            "filename": ""
+        }
+    }
+}

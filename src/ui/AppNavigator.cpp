@@ -2,8 +2,9 @@
 
 namespace lightinator::ui {
 
-AppNavigator::AppNavigator(lv_obj_t* root, UiStateStore& state, core::HsvColor& currentColor)
-    : root_(root), factory_(state, currentColor)
+AppNavigator::AppNavigator(lv_obj_t* root, UiStateStore& state, core::HsvColor& currentColor,
+                           const core::UiTheme& theme)
+    : root_(root), factory_(state, currentColor, theme)
 {
 }
 

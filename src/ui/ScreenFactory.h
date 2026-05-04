@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "ui/core/HsvColor.h"
+#include "ui/core/UiTheme.h"
 #include "ui/UiStateStore.h"
 #include "ui/screens/ColorPickerScreen.h"
 #include "ui/screens/MainScreen.h"
@@ -23,7 +24,7 @@ namespace lightinator::ui {
  */
 class ScreenFactory {
 public:
-    ScreenFactory(UiStateStore& state, core::HsvColor& currentColor);
+    ScreenFactory(UiStateStore& state, core::HsvColor& currentColor, const core::UiTheme& theme);
 
     std::unique_ptr<screens::MainScreen> createMainScreen(
         std::function<void()> onOpenColorPicker,
@@ -38,8 +39,9 @@ public:
     std::unique_ptr<screens::WifiConfigScreen> createWifiConfigScreen();
 
 private:
-    UiStateStore&   state_;
-    core::HsvColor& currentColor_;
+    UiStateStore&      state_;
+    core::HsvColor&    currentColor_;
+    core::UiTheme      theme_;
 };
 
 } // namespace lightinator::ui

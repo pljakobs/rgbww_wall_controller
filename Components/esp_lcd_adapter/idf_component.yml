@@ -1,0 +1,7 @@
+version: "0.1.0"
+description: "LVGL Runtime adapter for esp_lcd display drivers"
+url: "https://example.local/esp_lcd_adapter"
+license: "Proprietary"
+dependencies:
+  idf:
+    version: ">=5.1.0"

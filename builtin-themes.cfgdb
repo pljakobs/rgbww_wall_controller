@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "store": "false",
+  "properties": {
+    "nordic_dark": {
+      "type": "object",
+      "properties": {
+        "id":   { "type": "string",  "default": "nordic_dark" },
+        "name": { "type": "string",  "default": "Nordic Dark" },
+        "header": {
+          "type": "object",
+          "properties": {
+            "height":       { "type": "integer", "default": 60 },
+            "bgColor":      { "type": "string",  "default": "#2751a5" },
+            "fgColor":      { "type": "string",  "default": "#D8DEE9" },
+            "fontHeight":   { "type": "integer", "default": 36 },
+            "edgeRounding": { "type": "integer", "default": 0 }
+          }
+        },
+        "fontFamily": { "type": "string",  "default": "montserrat" },
+        "fontSize":   { "type": "integer", "default": 24 }
+      }
+    },
+    "classic_light": {
+      "type": "object",
+      "properties": {
+        "id":   { "type": "string",  "default": "classic_light" },
+        "name": { "type": "string",  "default": "Classic Light" },
+        "header": {
+          "type": "object",
+          "properties": {
+            "height":       { "type": "integer", "default": 60 },
+            "bgColor":      { "type": "string",  "default": "#ECEFF4" },
+            "fgColor":      { "type": "string",  "default": "#2E3440" },
+            "fontHeight":   { "type": "integer", "default": 36 },
+            "edgeRounding": { "type": "integer", "default": 4 }
+          }
+        },
+        "fontFamily": { "type": "string",  "default": "montserrat" },
+        "fontSize":   { "type": "integer", "default": 24 }
+      }
+    },
+    "high_contrast": {
+      "type": "object",
+      "properties": {
+        "id":   { "type": "string",  "default": "high_contrast" },
+        "name": { "type": "string",  "default": "High Contrast" },
+        "header": {
+          "type": "object",
+          "properties": {
+            "height":       { "type": "integer", "default": 60 },
+            "bgColor":      { "type": "string",  "default": "#000000" },
+            "fgColor":      { "type": "string",  "default": "#FFFFFF" },
+            "fontHeight":   { "type": "integer", "default": 36 },
+            "edgeRounding": { "type": "integer", "default": 0 }
+          }
+        },
+        "fontFamily": { "type": "string",  "default": "montserrat" },
+        "fontSize":   { "type": "integer", "default": 24 }
+      }
+    }
+  }
+}

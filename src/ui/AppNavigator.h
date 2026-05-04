@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "ui/core/HsvColor.h"
+#include "ui/core/UiTheme.h"
 #include "ui/UiStateStore.h"
 #include "ui/ScreenFactory.h"
 #include "ui/screens/MainScreen.h"
@@ -24,7 +25,8 @@ namespace lightinator::ui {
  */
 class AppNavigator {
 public:
-    AppNavigator(lv_obj_t* root, UiStateStore& state, core::HsvColor& currentColor);
+    AppNavigator(lv_obj_t* root, UiStateStore& state, core::HsvColor& currentColor,
+                 const core::UiTheme& theme = core::nordicDarkTheme());
 
     void showMainScreen();
     void showColorPickerScreen();

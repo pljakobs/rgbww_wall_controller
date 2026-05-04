@@ -4,8 +4,14 @@
 namespace lightinator::ui {
 
 ScreenFactory::ScreenFactory(UiStateStore& state, core::HsvColor& currentColor,
-                             const core::UiTheme& theme)
-    : state_(state), currentColor_(currentColor), theme_(theme)
+                             const core::UiTheme& theme,
+                                                         std::function<bool(const core::UiTheme&)> onSaveTheme,
+                                                         std::function<std::vector<core::UiTheme>()> onThemeList)
+        : state_(state),
+            currentColor_(currentColor),
+            theme_(theme),
+            onSaveTheme_(std::move(onSaveTheme)),
+            onThemeList_(std::move(onThemeList))
 {
 }
 
@@ -47,11 +53,21 @@ std::unique_ptr<screens::WifiConfigScreen> ScreenFactory::createWifiConfigScreen
     return std::make_unique<screens::WifiConfigScreen>(theme_);
 }
 
+
+std::unique_ptr<screens::MenuTestScreen> ScreenFactory::createMenuTestScreen(
+    std::function<void()> onClose)
+{
+    auto screen = std::make_unique<screens::MenuTestScreen>(theme_);
+    screen->setOnCloseRequested(std::move(onClose));
+    return screen;
+}
 std::unique_ptr<screens::ThemePreviewScreen> ScreenFactory::createThemePreviewScreen(
     std::function<void()> onClose)
 {
     auto screen = std::make_unique<screens::ThemePreviewScreen>(theme_);
     screen->setOnCloseRequested(std::move(onClose));
+    screen->setOnSaveRequested(onSaveTheme_);
+    screen->setOnThemeListRequested(onThemeList_);
     return screen;
 }
 

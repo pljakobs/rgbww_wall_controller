@@ -2,6 +2,7 @@
 
 #include <lvgl.h>
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -29,6 +30,8 @@ public:
     bool init();
     void tickAnimation();
     void setTheme(const core::UiTheme& theme);
+    void setOnThemeSaveRequested(std::function<bool(const core::UiTheme&)> callback);
+    void setOnThemeListRequested(std::function<std::vector<core::UiTheme>()> callback);
 
     void showWifiConfigScreen();
     void closeWifiConfigScreen();
@@ -47,6 +50,8 @@ private:
     lv_obj_t* screen_ = nullptr;
     lv_obj_t* root_ = nullptr;
     bool initialized_ = false;
+    std::function<bool(const core::UiTheme&)> onThemeSaveRequested_;
+    std::function<std::vector<core::UiTheme>()> onThemeListRequested_;
 
     std::unique_ptr<AppNavigator> navigator_;
 };

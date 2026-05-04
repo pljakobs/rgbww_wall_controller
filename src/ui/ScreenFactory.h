@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <memory>
+#include <vector>
 
 #include "ui/core/HsvColor.h"
 #include "ui/core/UiTheme.h"
@@ -13,6 +14,7 @@
 #include "ui/screens/NetworkInfoScreen.h"
 #include "ui/screens/ThemePreviewScreen.h"
 #include "ui/screens/WifiConfigScreen.h"
+#include "ui/screens/MenuTestScreen.h"
 
 namespace lightinator::ui {
 
@@ -25,7 +27,9 @@ namespace lightinator::ui {
  */
 class ScreenFactory {
 public:
-    ScreenFactory(UiStateStore& state, core::HsvColor& currentColor, const core::UiTheme& theme);
+    ScreenFactory(UiStateStore& state, core::HsvColor& currentColor, const core::UiTheme& theme,
+                  std::function<bool(const core::UiTheme&)> onSaveTheme,
+                  std::function<std::vector<core::UiTheme>()> onThemeList);
 
     std::unique_ptr<screens::MainScreen> createMainScreen(
         std::function<void()> onOpenColorPicker,
@@ -43,10 +47,15 @@ public:
     std::unique_ptr<screens::ThemePreviewScreen> createThemePreviewScreen(
         std::function<void()> onClose);
 
+    std::unique_ptr<screens::MenuTestScreen> createMenuTestScreen(
+        std::function<void()> onClose);
+
 private:
     UiStateStore&      state_;
     core::HsvColor&    currentColor_;
     core::UiTheme      theme_;
+    std::function<bool(const core::UiTheme&)> onSaveTheme_;
+    std::function<std::vector<core::UiTheme>()> onThemeList_;
 };
 
 } // namespace lightinator::ui

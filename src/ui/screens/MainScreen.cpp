@@ -105,6 +105,11 @@ void MainScreen::setOnOpenThemePreviewRequested(std::function<void()> callback)
     onOpenThemePreviewRequested_ = std::move(callback);
 }
 
+void MainScreen::setOnOpenMenuTestRequested(std::function<void()> callback)
+{
+    onOpenMenuTestRequested_ = std::move(callback);
+}
+
 void MainScreen::setWifiConnected(bool connected)
 {
     wifiConnected_ = connected;
@@ -125,7 +130,7 @@ void MainScreen::onOpenButtonEvent(lv_event_t* event)
     }
 }
 
-void MainScreen::onMenuItemEvent(lv_event_t* event)
+void MainScreen::onMenuThemeEvent(lv_event_t* event)
 {
     auto* self = static_cast<MainScreen*>(lv_event_get_user_data(event));
     if (self == nullptr) {
@@ -134,6 +139,42 @@ void MainScreen::onMenuItemEvent(lv_event_t* event)
     self->hideBurgerMenu();
     if (self->onOpenThemePreviewRequested_) {
         self->onOpenThemePreviewRequested_();
+    }
+}
+
+void MainScreen::onMenuColorPickerEvent(lv_event_t* event)
+{
+    auto* self = static_cast<MainScreen*>(lv_event_get_user_data(event));
+    if (self == nullptr) {
+        return;
+    }
+    self->hideBurgerMenu();
+    if (self->onOpenColorPickerRequested_) {
+        self->onOpenColorPickerRequested_();
+    }
+}
+
+void MainScreen::onMenuNetworkInfoEvent(lv_event_t* event)
+{
+    auto* self = static_cast<MainScreen*>(lv_event_get_user_data(event));
+    if (self == nullptr) {
+        return;
+    }
+    self->hideBurgerMenu();
+    if (self->onOpenNetworkInfoRequested_) {
+        self->onOpenNetworkInfoRequested_();
+    }
+}
+
+void MainScreen::onMenuMenuTestEvent(lv_event_t* event)
+{
+    auto* self = static_cast<MainScreen*>(lv_event_get_user_data(event));
+    if (self == nullptr) {
+        return;
+    }
+    self->hideBurgerMenu();
+    if (self->onOpenMenuTestRequested_) {
+        self->onOpenMenuTestRequested_();
     }
 }
 
@@ -155,46 +196,79 @@ void MainScreen::showBurgerMenu()
 
     lv_obj_t* root = decorated_->root();
 
-    // Transparent full-screen dismiss layer
+    // Dimming dismiss layer under a left-side drawer.
     lv_obj_t* dismiss = lv_obj_create(root);
     lv_obj_set_size(dismiss, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_bg_opa(dismiss, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_bg_color(dismiss, lv_color_black(), 0);
+    lv_obj_set_style_bg_opa(dismiss, LV_OPA_40, 0);
     lv_obj_set_style_border_width(dismiss, 0, 0);
     lv_obj_set_style_pad_all(dismiss, 0, 0);
     lv_obj_add_flag(dismiss, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(dismiss, onMenuDismissEvent, LV_EVENT_CLICKED, this);
 
-    // Menu panel
+    // Left drawer panel occupying half the screen.
     lv_obj_t* panel = lv_obj_create(dismiss);
     burgerMenuPanel_ = panel;
-    lv_obj_set_size(panel, 200, LV_SIZE_CONTENT);
-    lv_obj_set_pos(panel, 14, theme_.headerHeight + 20);
+    lv_coord_t drawerWidth = lv_obj_get_width(root) / 2;
+    if (drawerWidth < 180) {
+        drawerWidth = 180;
+    }
+    lv_obj_set_size(panel, drawerWidth, lv_pct(100));
+    lv_obj_set_pos(panel, 0, 0);
     lv_obj_set_style_bg_color(panel, theme_.colors.buttonBg, 0);
     lv_obj_set_style_bg_opa(panel, LV_OPA_COVER, 0);
-    lv_obj_set_style_radius(panel, 10, 0);
+    lv_obj_set_style_radius(panel, 0, 0);
     lv_obj_set_style_border_width(panel, 1, 0);
     lv_obj_set_style_border_color(panel, theme_.colors.shadow, 0);
-    lv_obj_set_style_pad_all(panel, 6, 0);
-    lv_obj_set_style_pad_row(panel, 4, 0);
+    lv_obj_set_style_pad_all(panel, 0, 0);
+    lv_obj_set_style_pad_row(panel, 0, 0);
     lv_obj_set_flex_flow(panel, LV_FLEX_FLOW_COLUMN);
 
-    // "Theme View" item
-    lv_obj_t* item = lv_obj_create(panel);
-    lv_obj_set_width(item, lv_pct(100));
-    lv_obj_set_height(item, LV_SIZE_CONTENT);
-    lv_obj_set_style_bg_opa(item, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(item, 0, 0);
-    lv_obj_set_style_pad_all(item, 10, 0);
-    lv_obj_set_style_radius(item, 8, 0);
-    lv_obj_add_flag(item, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_set_style_bg_color(item, theme_.colors.headerBg, LV_STATE_PRESSED);
-    lv_obj_set_style_bg_opa(item, LV_OPA_COVER, LV_STATE_PRESSED);
-    lv_obj_add_event_cb(item, onMenuItemEvent, LV_EVENT_CLICKED, this);
+    lv_obj_t* title = lv_label_create(panel);
+    lv_label_set_text_static(title, "Menu");
+    lv_obj_set_style_text_font(title, theme_.fonts.subheader, 0);
+    lv_obj_set_style_text_color(title, theme_.colors.buttonFg, 0);
+    lv_obj_set_style_pad_all(title, 12, 0);
 
-    lv_obj_t* label = lv_label_create(item);
-    lv_label_set_text_static(label, "Theme View");
-    lv_obj_set_style_text_font(label, theme_.fonts.subheader, 0);
-    lv_obj_set_style_text_color(label, theme_.colors.buttonFg, 0);
+    lv_obj_t* list = lv_list_create(panel);
+    lv_obj_set_size(list, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_bg_opa(list, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(list, 0, 0);
+    lv_obj_set_style_pad_all(list, 0, 0);
+    lv_obj_set_style_pad_row(list, 0, 0);
+    lv_obj_clear_flag(list, LV_OBJ_FLAG_SCROLLABLE);
+
+    auto styleListButton = [this](lv_obj_t* btn) {
+        lv_obj_set_width(btn, lv_pct(100));
+        lv_obj_set_style_border_width(btn, 0, 0);
+        lv_obj_set_style_radius(btn, 0, 0);
+        lv_obj_set_style_bg_opa(btn, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_bg_color(btn, theme_.colors.headerBg, LV_STATE_PRESSED);
+        lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, LV_STATE_PRESSED);
+        lv_obj_set_style_text_font(btn, theme_.fonts.contentSubheader, 0);
+        lv_obj_set_style_text_color(btn, theme_.colors.buttonFg, 0);
+        lv_obj_set_style_pad_left(btn, 16, 0);
+        lv_obj_set_style_pad_right(btn, 16, 0);
+        lv_obj_set_height(btn, 64);
+        lv_obj_set_ext_click_area(btn, 8);
+    };
+
+    lv_obj_t* colorItem = lv_list_add_btn(list, nullptr, "Color Picker");
+    styleListButton(colorItem);
+    lv_obj_add_event_cb(colorItem, onMenuColorPickerEvent, LV_EVENT_CLICKED, this);
+
+    lv_obj_t* networkItem = lv_list_add_btn(list, nullptr, "Network Info");
+    styleListButton(networkItem);
+    lv_obj_add_event_cb(networkItem, onMenuNetworkInfoEvent, LV_EVENT_CLICKED, this);
+
+    lv_obj_t* themeItem = lv_list_add_btn(list, nullptr, "Theme View");
+    styleListButton(themeItem);
+    lv_obj_add_event_cb(themeItem, onMenuThemeEvent, LV_EVENT_CLICKED, this);
+
+    // ui-scaffold:main-left:MenuTest:menu-item
+    lv_obj_t* generatedItem = lv_list_add_btn(list, nullptr, "MenuTest");
+    styleListButton(generatedItem);
+    lv_obj_add_event_cb(generatedItem, onMenuMenuTestEvent, LV_EVENT_CLICKED, this);
 }
 
 void MainScreen::hideBurgerMenu()

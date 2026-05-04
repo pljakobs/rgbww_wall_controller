@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <memory>
+#include <vector>
 
 #include "ui/core/HsvColor.h"
 #include "ui/core/UiTheme.h"
@@ -14,6 +15,7 @@
 #include "ui/screens/NetworkInfoScreen.h"
 #include "ui/screens/ThemePreviewScreen.h"
 #include "ui/screens/WifiConfigScreen.h"
+#include "ui/screens/MenuTestScreen.h"
 
 namespace lightinator::ui {
 
@@ -27,7 +29,9 @@ namespace lightinator::ui {
 class AppNavigator {
 public:
     AppNavigator(lv_obj_t* root, UiStateStore& state, core::HsvColor& currentColor,
-                 const core::UiTheme& theme);
+                 const core::UiTheme& theme,
+                 std::function<bool(const core::UiTheme&)> onSaveTheme,
+                 std::function<std::vector<core::UiTheme>()> onThemeList);
 
     void showMainScreen();
     void showColorPickerScreen();
@@ -35,6 +39,7 @@ public:
     void showWifiConfigScreen();
     void closeWifiConfigScreen();
     void showThemePreviewScreen();
+    void showMenuTestScreen();
 
     screens::WifiConfigScreen*   wifiConfigScreen();
     screens::MainScreen*         mainScreen();
@@ -59,6 +64,7 @@ private:
     std::unique_ptr<screens::WifiConfigScreen>     wifiConfigScreen_;
     std::unique_ptr<screens::NetworkInfoScreen>    networkInfoScreen_;
     std::unique_ptr<screens::ThemePreviewScreen>   themePreviewScreen_;
+    std::unique_ptr<screens::MenuTestScreen>   menuTestScreen_;
 
     std::function<void(screens::NetworkInfoScreen*)> onNetworkInfoScreenChanged_;
 };

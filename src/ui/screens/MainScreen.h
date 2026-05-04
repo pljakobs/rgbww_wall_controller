@@ -23,11 +23,15 @@ public:
     void setOnOpenColorPickerRequested(std::function<void()> callback);
     void setOnOpenNetworkInfoRequested(std::function<void()> callback);
     void setOnOpenThemePreviewRequested(std::function<void()> callback);
+    void setOnOpenMenuTestRequested(std::function<void()> callback);
     void setWifiConnected(bool connected);
 
 private:
     static void onOpenButtonEvent(lv_event_t* event);
-    static void onMenuItemEvent(lv_event_t* event);
+    static void onMenuThemeEvent(lv_event_t* event);
+    static void onMenuColorPickerEvent(lv_event_t* event);
+    static void onMenuNetworkInfoEvent(lv_event_t* event);
+    static void onMenuMenuTestEvent(lv_event_t* event);
     static void onMenuDismissEvent(lv_event_t* event);
 
     void showBurgerMenu();
@@ -38,6 +42,7 @@ private:
     std::function<void()> onOpenColorPickerRequested_;
     std::function<void()> onOpenNetworkInfoRequested_;
     std::function<void()> onOpenThemePreviewRequested_;
+    std::function<void()> onOpenMenuTestRequested_;
     bool wifiConnected_ = false;
 
     lv_obj_t* burgerMenuPanel_ = nullptr;

@@ -32,7 +32,8 @@ bool AppUi::init()
     lv_obj_set_style_pad_all(root_, 0, 0);
 
     currentColor_ = core::clampHsv(currentColor_);
-    navigator_ = std::make_unique<AppNavigator>(root_, state_, currentColor_, theme_);
+    navigator_ = std::make_unique<AppNavigator>(
+        root_, state_, currentColor_, theme_, onThemeSaveRequested_, onThemeListRequested_);
     navigator_->setOnNetworkInfoScreenChanged(
         [this](screens::NetworkInfoScreen* screen) {
             networkInfoPresenter_.bind(screen);
@@ -53,6 +54,16 @@ void AppUi::setTheme(const core::UiTheme& theme)
     if (screen_ != nullptr) {
         lv_obj_set_style_bg_color(screen_, theme_.colors.contentBg, 0);
     }
+}
+
+void AppUi::setOnThemeSaveRequested(std::function<bool(const core::UiTheme&)> callback)
+{
+    onThemeSaveRequested_ = std::move(callback);
+}
+
+void AppUi::setOnThemeListRequested(std::function<std::vector<core::UiTheme>()> callback)
+{
+    onThemeListRequested_ = std::move(callback);
 }
 
 void AppUi::showWifiConfigScreen()

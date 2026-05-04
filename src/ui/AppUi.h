@@ -7,13 +7,18 @@
 
 #include "ui/core/HsvColor.h"
 #include "ui/UiStateStore.h"
-#include "ui/screens/ColorPickerScreen.h"
-#include "ui/screens/MainScreen.h"
+#include "ui/AppNavigator.h"
 #include "ui/screens/NetworkInfoScreen.h"
 #include "ui/screens/WifiConfigScreen.h"
 
 namespace lightinator::ui {
 
+/**
+ * AppUi — LVGL root ownership and public UI API.
+ *
+ * Owns the LVGL screen/root objects and the UiStateStore.
+ * Delegates all screen navigation to AppNavigator.
+ */
 class AppUi {
 public:
     ~AppUi();
@@ -30,14 +35,6 @@ public:
     void setNeighbours(const std::vector<screens::NetworkInfoScreen::Neighbour>& neighbours);
 
 private:
-    void clearRoot();
-    void showMainScreen();
-    void showColorPickerScreen();
-    void showNetworkInfoScreen();
-
-    // Push current store state to whatever screen is active (called after navigation).
-    void pushStateToActiveScreen();
-
     core::HsvColor currentColor_;
     UiStateStore state_;
 
@@ -45,10 +42,7 @@ private:
     lv_obj_t* root_ = nullptr;
     bool initialized_ = false;
 
-    std::unique_ptr<screens::MainScreen> mainScreen_;
-    std::unique_ptr<screens::ColorPickerScreen> colorPickerScreen_;
-    std::unique_ptr<screens::WifiConfigScreen> wifiConfigScreen_;
-    std::unique_ptr<screens::NetworkInfoScreen> networkInfoScreen_;
+    std::unique_ptr<AppNavigator> navigator_;
 };
 
 } // namespace lightinator::ui

@@ -3,12 +3,12 @@
 #include <lvgl.h>
 
 #include <memory>
-#include <vector>
 
 #include "ui/core/HsvColor.h"
 #include "ui/UiStateStore.h"
-#include "ui/screens/ColorPickerScreen.h"
+#include "ui/ScreenFactory.h"
 #include "ui/screens/MainScreen.h"
+#include "ui/screens/ColorPickerScreen.h"
 #include "ui/screens/NetworkInfoScreen.h"
 #include "ui/screens/WifiConfigScreen.h"
 
@@ -18,8 +18,8 @@ namespace lightinator::ui {
  * AppNavigator — screen transition logic only.
  *
  * Owns all screen instance pointers. Drives showX / clearRoot.
- * Exposes raw accessors so callers can perform visible-screen gating
- * without AppNavigator needing to know about state semantics.
+ * Delegates screen construction to ScreenFactory.
+ * Exposes raw accessors for visible-screen gating.
  */
 class AppNavigator {
 public:
@@ -42,8 +42,7 @@ private:
     void clearRoot();
 
     lv_obj_t*        root_;
-    UiStateStore&    state_;
-    core::HsvColor&  currentColor_;
+    ScreenFactory    factory_;
 
     std::unique_ptr<screens::MainScreen>        mainScreen_;
     std::unique_ptr<screens::ColorPickerScreen> colorPickerScreen_;

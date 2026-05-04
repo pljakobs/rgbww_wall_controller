@@ -8,6 +8,7 @@
 #include "ui/core/HsvColor.h"
 #include "ui/UiStateStore.h"
 #include "ui/AppNavigator.h"
+#include "ui/NetworkInfoPresenter.h"
 #include "ui/screens/NetworkInfoScreen.h"
 #include "ui/screens/WifiConfigScreen.h"
 
@@ -21,6 +22,7 @@ namespace lightinator::ui {
  */
 class AppUi {
 public:
+    AppUi();
     ~AppUi();
 
     bool init();
@@ -37,6 +39,7 @@ public:
 private:
     core::HsvColor currentColor_;
     UiStateStore state_;
+    NetworkInfoPresenter networkInfoPresenter_;
 
     lv_obj_t* screen_ = nullptr;
     lv_obj_t* root_ = nullptr;

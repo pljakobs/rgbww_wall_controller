@@ -12,6 +12,10 @@ void AppNavigator::clearRoot()
     if (root_ == nullptr) {
         return;
     }
+    // Notify unbind before destroying the screen.
+    if (networkInfoScreen_ && onNetworkInfoScreenChanged_) {
+        onNetworkInfoScreenChanged_(nullptr);
+    }
     lv_obj_clean(root_);
 }
 
@@ -52,6 +56,9 @@ void AppNavigator::showNetworkInfoScreen()
     networkInfoScreen_ = factory_.createNetworkInfoScreen(
         [this]() { showMainScreen(); });
     networkInfoScreen_->mount(root_);
+    if (onNetworkInfoScreenChanged_) {
+        onNetworkInfoScreenChanged_(networkInfoScreen_.get());
+    }
 }
 
 void AppNavigator::showWifiConfigScreen()
@@ -82,6 +89,12 @@ screens::MainScreen* AppNavigator::mainScreen()
 screens::NetworkInfoScreen* AppNavigator::networkInfoScreen()
 {
     return networkInfoScreen_.get();
+}
+
+void AppNavigator::setOnNetworkInfoScreenChanged(
+    std::function<void(screens::NetworkInfoScreen*)> cb)
+{
+    onNetworkInfoScreenChanged_ = std::move(cb);
 }
 
 } // namespace lightinator::ui

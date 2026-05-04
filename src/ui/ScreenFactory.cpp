@@ -34,9 +34,7 @@ std::unique_ptr<screens::NetworkInfoScreen> ScreenFactory::createNetworkInfoScre
 {
     auto screen = std::make_unique<screens::NetworkInfoScreen>();
     screen->setOnCloseRequested(std::move(onClose));
-    // Seed with current store state so the screen is ready on first render.
-    screen->setNetworkInfo(state_.wifiConnected(), state_.ipAddress(), state_.netmask(), state_.gateway());
-    screen->setNeighbours(state_.neighbours());
+    // Initial state is seeded by NetworkInfoPresenter::bind() after mount.
     return screen;
 }
 

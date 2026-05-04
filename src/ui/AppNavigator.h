@@ -2,6 +2,7 @@
 
 #include <lvgl.h>
 
+#include <functional>
 #include <memory>
 
 #include "ui/core/HsvColor.h"
@@ -38,6 +39,11 @@ public:
     /// Push current store state to whichever screen is active (called after navigation).
     void pushStateToActiveScreen();
 
+    /// Register a callback that fires with the active NetworkInfoScreen pointer when
+    /// the screen is shown, or nullptr when it is hidden (navigated away).
+    void setOnNetworkInfoScreenChanged(
+        std::function<void(screens::NetworkInfoScreen*)> cb);
+
 private:
     void clearRoot();
 
@@ -48,6 +54,8 @@ private:
     std::unique_ptr<screens::ColorPickerScreen> colorPickerScreen_;
     std::unique_ptr<screens::WifiConfigScreen>  wifiConfigScreen_;
     std::unique_ptr<screens::NetworkInfoScreen> networkInfoScreen_;
+
+    std::function<void(screens::NetworkInfoScreen*)> onNetworkInfoScreenChanged_;
 };
 
 } // namespace lightinator::ui

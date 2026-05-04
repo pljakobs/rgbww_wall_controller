@@ -6,6 +6,11 @@ namespace lightinator::ui {
 
 AppUi::~AppUi() = default;
 
+AppUi::AppUi()
+    : networkInfoPresenter_(state_)
+{
+}
+
 bool AppUi::init()
 {
     if (initialized_) {
@@ -28,6 +33,10 @@ bool AppUi::init()
 
     currentColor_ = core::clampHsv(currentColor_);
     navigator_ = std::make_unique<AppNavigator>(root_, state_, currentColor_);
+    navigator_->setOnNetworkInfoScreenChanged(
+        [this](screens::NetworkInfoScreen* screen) {
+            networkInfoPresenter_.bind(screen);
+        });
     navigator_->showMainScreen();
     initialized_ = true;
     return true;
@@ -59,13 +68,12 @@ void AppUi::setNetworkInfo(bool connected, const String& ip, const String& netma
     if (!changed) {
         return;
     }
-    // Visible-screen gating: only push to whichever screen is currently active.
+    // Update the wifi icon on main screen if visible.
     if (navigator_->mainScreen()) {
         navigator_->mainScreen()->setWifiConnected(state_.wifiConnected());
     }
-    if (navigator_->networkInfoScreen()) {
-        navigator_->networkInfoScreen()->setNetworkInfo(state_.wifiConnected(), state_.ipAddress(), state_.netmask(), state_.gateway());
-    }
+    // Delegate network info rendering to the presenter.
+    networkInfoPresenter_.onNetworkInfoChanged();
 }
 
 void AppUi::setNeighbours(const std::vector<screens::NetworkInfoScreen::Neighbour>& neighbours)
@@ -74,10 +82,8 @@ void AppUi::setNeighbours(const std::vector<screens::NetworkInfoScreen::Neighbou
     if (!changed) {
         return;
     }
-    // Only update the neighbours list if NetworkInfoScreen is visible.
-    if (navigator_->networkInfoScreen()) {
-        navigator_->networkInfoScreen()->setNeighbours(state_.neighbours());
-    }
+    // Delegate neighbour list rendering to the presenter.
+    networkInfoPresenter_.onNeighboursChanged();
 }
 
 } // namespace lightinator::ui

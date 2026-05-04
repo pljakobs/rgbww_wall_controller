@@ -47,6 +47,11 @@ void AppUi::tickAnimation()
     // The app is event-driven; timer ticks are currently unused.
 }
 
+void AppUi::setTheme(const core::UiTheme& theme)
+{
+    theme_ = theme;
+}
+
 void AppUi::showWifiConfigScreen()
 {
     navigator_->showWifiConfigScreen();

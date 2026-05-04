@@ -28,6 +28,7 @@ public:
 
     bool init();
     void tickAnimation();
+    void setTheme(const core::UiTheme& theme);
 
     void showWifiConfigScreen();
     void closeWifiConfigScreen();

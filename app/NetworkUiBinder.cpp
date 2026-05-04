@@ -3,10 +3,6 @@
 #include <esp_log.h>
 #include <vector>
 
-extern "C" {
-#include "lvgl_runtime_adapter/lvgl_runtime_adapter.h"
-}
-
 #include "ui/screens/NetworkInfoScreen.h"
 
 static const char* BINDER_TAG = "NetUiBinder";
@@ -40,18 +36,14 @@ void NetworkUiBinder::bind()
     });
 
     wifi_.setConnectedCallback([this]() {
-        lvgl_runtime_adapter_lock();
-        push_network_state(ui_, wifi_);
-        lvgl_runtime_adapter_unlock();
+        runtime_.runOnUiThread([this]() { push_network_state(ui_, wifi_); });
         if (wifiFlow_) {
             wifiFlow_->onWifiConnected();
         }
     });
 
     wifi_.setStationDisconnectedCallback([this]() {
-        lvgl_runtime_adapter_lock();
-        push_network_state(ui_, wifi_);
-        lvgl_runtime_adapter_unlock();
+        runtime_.runOnUiThread([this]() { push_network_state(ui_, wifi_); });
         if (wifiFlow_) {
             wifiFlow_->onWifiDisconnected();
         }

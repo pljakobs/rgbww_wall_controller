@@ -35,7 +35,7 @@ Recommended migration order (low risk):
 1. ✅ Extract UiStateStore first, keep AppUi calling into it.
 2. ✅ Extract AppNavigator next, move showX methods there.
 3. ✅ Add ScreenFactory to centralize screen construction.
-4. Introduce one presenter first (NetworkInfo), then expand to others.
+4. ✅ Introduce one presenter first (NetworkInfo), then expand to others.
 5. Finally shrink AppUi to root management only.
 
 What you get:
@@ -72,10 +72,10 @@ application.cpp is currently doing hardware setup, runtime setup, callback wirin
 
 Recommended migration order for application.cpp cleanup:
 
-1. Extract HardwareInitService first (lowest risk).
+1. ✅ Extract HardwareInitService first (lowest risk).
 2. ✅ Extract NetworkUiBinder for callback setup.
-3. Extract UiRuntimeService for timer + lock helpers.
-4. Introduce AppBootstrap last to compose all modules.
+3. ✅ Extract UiRuntimeService for timer + lock helpers.
+4. ✅ Introduce AppBootstrap last to compose all modules.
 
 Outcome:
 - Much smaller init() function.

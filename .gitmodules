@@ -1,3 +1,27 @@
 [submodule "libs/lvgl"]
-	path = libs/lvgl
+	path = Components/lvgl
 	url = https://github.com/lvgl/lvgl.git
+[submodule "DisplayDriver"]
+	path = Components/display_driver_guition_4848s040
+	url = git@github.com:pljakobs/display_driver_guition_4848s040
+[submodule "TouchDriver"]
+	path = Components/touch_driver_gt911
+	url = git@github.com:pljakobs/touch_driver_gt911
+[submodule "Components/esp_lcd_adapter"]
+	path = Components/esp_lcd_adapter
+	url = git@github.com:pljakobs/esp_lcd_adapter
+[submodule "rgbww_wall_panel_ui"]
+	path = Components/rgbww_wall_panel_ui
+	url = git@github.com:pljakobs/rgbww_wall_panel_ui.git
+[submodule "Components/lvgl_runtime_adapter"]
+	path = Components/lvgl_runtime_adapter
+	url = /home/pjakobs/devel/lvgl_runtime_adapter
+[submodule "libs/esp-iot-solution"]
+	path = Components/esp_lcd_adapter/esp-iot-solution
+	url = https://github.com/espressif/esp-iot-solution.git
+[submodule "Components/esp-iot-solution"]
+	path = Components/esp-iot-solution
+	url = https://github.com/espressif/esp-iot-solution.git
+[submodule "Components/lvglCpp"]
+	path = Components/lvglCpp
+	url = https://github.com/dev-board-tech/lvglCpp.git

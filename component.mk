@@ -1,10 +1,8 @@
 ## Local build configuration
 ## Parameters configured here will override default and ENV values.
 
-## Search for Sming components in libs/, Components/, AND in the sibling repos under ../
-## This allows ESP32_Display_Panel and its dependencies to be found in Components/,
-## and display_driver_guition_4848s040 / esp_lcd_adapter / lvgl_runtime_adapter
-## to be found in ../.
+## Use explicit component search paths.
+## Components are vendored as local submodules under Components/.
 ## The esp-iot-solution LCD components (esp_lcd_st7701, esp_lcd_panel_io_additions)
 ## are fetched as a sparse-clone under libs/esp-iot-solution.
 ## Point Sming at the GUITION-specific sdkconfig additions (enables OPI PSRAM).
@@ -14,11 +12,21 @@ SDK_CUSTOM_CONFIG := sdkconfig.custom
 
 export COMPONENT_SEARCH_DIRS := \
     $(CURDIR)/Components \
-    $(CURDIR)/libs \
-    $(CURDIR)/libs/esp-iot-solution/components/display/lcd \
-    $(CURDIR)/..
+    $(CURDIR)/libs
 
-COMPONENT_DEPENDS := esp_lcd_adapter rgbww touch_driver_gt911
+ESP_IOT_LCD_DIR := $(CURDIR)/libs/esp-iot-solution/components/display/lcd
+ifneq (,$(wildcard $(ESP_IOT_LCD_DIR)))
+export COMPONENT_SEARCH_DIRS += $(ESP_IOT_LCD_DIR)
+endif
+
+RGBWW_COMPONENT_DIR := $(if $(wildcard $(CURDIR)/Components/rgbww_wall_panel_ui/component.mk),$(CURDIR)/Components/rgbww_wall_panel_ui,$(CURDIR)/../rgbww_wall_panel_ui)
+LVGL_RUNTIME_ADAPTER_DIR := $(if $(wildcard $(CURDIR)/Components/lvgl_runtime_adapter/component.mk),$(CURDIR)/Components/lvgl_runtime_adapter,$(CURDIR)/../lvgl_runtime_adapter)
+
+export COMPONENT_SEARCH_DIRS += \
+    $(RGBWW_COMPONENT_DIR) \
+    $(LVGL_RUNTIME_ADAPTER_DIR)
+
+COMPONENT_DEPENDS := esp_lcd_adapter rgbww_wall_panel_ui touch_driver_gt911
 
 ## esp_lcd and esp_psram are added to the Sming SDK_COMPONENTS list in
 ## /opt/sming/Sming/Arch/Esp32/Components/esp32/component.mk so they are

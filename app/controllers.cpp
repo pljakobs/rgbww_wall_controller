@@ -17,7 +17,8 @@ void Controllers::addOrUpdate(uint32_t id, const String& name, const String& ip,
         entry.ttl = ttl;
         entry.online = ttl > 0;
         entries_.push_back(entry);
-    if(onChanged_) { onChanged_(); }
+        if(onChanged_) { onChanged_(); }
+        return;
     }
 
     if(name.length() > 0) {

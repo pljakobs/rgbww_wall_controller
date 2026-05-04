@@ -219,18 +219,26 @@
         "properties": {
           "id":           { "type": "string" },
           "name":         { "type": "string" },
-          "mode":         { "type": "string", "enum": ["light", "dark"] },
+          "mode":         { 
+            "type": "string", 
+            "enum": 
+            [
+              "light", 
+              "dark"
+            ],
+            "default":"light"
+          },
           "headerHeight": { "type": "integer", "default": 60 },
           "colors": {
             "type": "object",
             "properties": {
-              "headerBg":  { "type": "string", "default": "#2751a5" },
+              "headerBg":  { "type": "string", "default": "#7527a5" },
               "headerFg":  { "type": "string", "default": "#D8DEE9" },
               "contentBg": { "type": "string", "default": "#2E3440" },
               "contentFg": { "type": "string", "default": "#D8DEE9" },
-              "buttonBg":  { "type": "string", "default": "#4C566A" },
+              "buttonBg":  { "type": "string", "default": "#2751a5" },
               "buttonFg":  { "type": "string", "default": "#ECEFF4" },
-              "shadow":    { "type": "string", "default": "#000000" },
+              "shadow":    { "type": "string", "default": "#3b3b3b" },
               "dangerBg":  { "type": "string", "default": "#BF616A" },
               "dangerFg":  { "type": "string", "default": "#ECEFF4" }
             }
@@ -239,10 +247,10 @@
             "type": "object",
             "properties": {
               "header":           { "type": "integer", "default": 36 },
-              "subheader":        { "type": "integer", "default": 24 },
-              "contentHeader":    { "type": "integer", "default": 22 },
-              "contentSubheader": { "type": "integer", "default": 16 },
-              "content":          { "type": "integer", "default": 14 }
+              "subheader":        { "type": "integer", "default": 14 },
+              "contentHeader":    { "type": "integer", "default": 26 },
+              "contentSubheader": { "type": "integer", "default": 14 },
+              "content":          { "type": "integer", "default": 10 }
             }
           }
         }

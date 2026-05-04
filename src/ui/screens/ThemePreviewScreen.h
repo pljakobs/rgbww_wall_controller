@@ -4,31 +4,31 @@
 #include <memory>
 
 #include <lvgl.h>
+#include <lvglCpp.h>
 
-#include "ui/core/HsvColor.h"
 #include "ui/core/Screen.h"
 #include "ui/core/UiTheme.h"
 #include "ui/screens/DecoratedScreen.h"
-#include "ui/widgets/HsvColorPicker.h"
 
 namespace lightinator::ui::screens {
 
-class ColorPickerScreen : public core::Screen {
+class ThemePreviewScreen : public core::Screen {
 public:
-    explicit ColorPickerScreen(core::HsvColor initialColor, const core::UiTheme& theme);
+    explicit ThemePreviewScreen(const core::UiTheme& theme);
 
     void mount(lv_obj_t* parent) override;
 
     void setOnCloseRequested(std::function<void()> callback);
-    void setOnColorChanged(std::function<void(const core::HsvColor&)> callback);
 
 private:
-    core::HsvColor initialColor_;
-    core::UiTheme theme_;
+    void buildColorsTab(lv_obj_t* tab);
+    void buildFontsTab(lv_obj_t* tab);
 
+    void addColorRow(lv_obj_t* parent, const char* name, lv_color_t color);
+    void addFontRow(lv_obj_t* parent, const char* name, const lv_font_t* font);
+
+    core::UiTheme theme_;
     std::function<void()> onCloseRequested_;
-    std::function<void(const core::HsvColor&)> onColorChanged_;
-    core::HsvColor currentColor_;
 
     std::unique_ptr<DecoratedScreen> decorated_;
 };

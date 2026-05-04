@@ -22,7 +22,7 @@ bool AppUi::init()
         return false;
     }
 
-    lv_obj_set_style_bg_color(screen_, lv_color_hex(0x0D1116), 0);
+    lv_obj_set_style_bg_color(screen_, theme_.colors.contentBg, 0);
     lv_obj_set_style_bg_opa(screen_, LV_OPA_COVER, 0);
 
     root_ = lv_obj_create(screen_);
@@ -50,6 +50,9 @@ void AppUi::tickAnimation()
 void AppUi::setTheme(const core::UiTheme& theme)
 {
     theme_ = theme;
+    if (screen_ != nullptr) {
+        lv_obj_set_style_bg_color(screen_, theme_.colors.contentBg, 0);
+    }
 }
 
 void AppUi::showWifiConfigScreen()

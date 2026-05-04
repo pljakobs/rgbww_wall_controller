@@ -1,4 +1,5 @@
 #include "ui/ScreenFactory.h"
+#include "ui/screens/ThemePreviewScreen.h"
 
 namespace lightinator::ui {
 
@@ -10,11 +11,13 @@ ScreenFactory::ScreenFactory(UiStateStore& state, core::HsvColor& currentColor,
 
 std::unique_ptr<screens::MainScreen> ScreenFactory::createMainScreen(
     std::function<void()> onOpenColorPicker,
-    std::function<void()> onOpenNetworkInfo)
+    std::function<void()> onOpenNetworkInfo,
+    std::function<void()> onOpenThemePreview)
 {
     auto screen = std::make_unique<screens::MainScreen>(currentColor_, theme_);
     screen->setOnOpenColorPickerRequested(std::move(onOpenColorPicker));
     screen->setOnOpenNetworkInfoRequested(std::move(onOpenNetworkInfo));
+    screen->setOnOpenThemePreviewRequested(std::move(onOpenThemePreview));
     screen->setWifiConnected(state_.wifiConnected());
     return screen;
 }
@@ -42,6 +45,14 @@ std::unique_ptr<screens::NetworkInfoScreen> ScreenFactory::createNetworkInfoScre
 std::unique_ptr<screens::WifiConfigScreen> ScreenFactory::createWifiConfigScreen()
 {
     return std::make_unique<screens::WifiConfigScreen>(theme_);
+}
+
+std::unique_ptr<screens::ThemePreviewScreen> ScreenFactory::createThemePreviewScreen(
+    std::function<void()> onClose)
+{
+    auto screen = std::make_unique<screens::ThemePreviewScreen>(theme_);
+    screen->setOnCloseRequested(std::move(onClose));
+    return screen;
 }
 
 } // namespace lightinator::ui

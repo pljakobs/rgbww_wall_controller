@@ -46,8 +46,10 @@ void init()
     {
         using namespace lightinator::ui::core;
         UiTheme theme = nordicDarkTheme();
-        String activeId = s_cfg->getActiveTheme();
-        for (auto t : s_data->themes) {
+        AppConfig::Root cfgRoot(*s_cfg);
+        AppData::Root dataRoot(*s_data);
+        String activeId = cfgRoot.getActiveTheme();
+        for (auto t : dataRoot.themes) {
             if (t.getId() == activeId) {
                 theme.id           = t.getId();
                 theme.name         = t.getName();

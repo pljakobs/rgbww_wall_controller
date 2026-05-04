@@ -31,9 +31,11 @@ void AppNavigator::showMainScreen()
     colorPickerScreen_.reset();
     wifiConfigScreen_.reset();
     networkInfoScreen_.reset();
+    themePreviewScreen_.reset();
     mainScreen_ = factory_.createMainScreen(
         [this]() { showColorPickerScreen(); },
-        [this]() { showNetworkInfoScreen(); });
+        [this]() { showNetworkInfoScreen(); },
+        [this]() { showThemePreviewScreen(); });
     mainScreen_->mount(root_);
 }
 
@@ -43,6 +45,7 @@ void AppNavigator::showColorPickerScreen()
     mainScreen_.reset();
     wifiConfigScreen_.reset();
     networkInfoScreen_.reset();
+    themePreviewScreen_.reset();
     colorPickerScreen_ = factory_.createColorPickerScreen(
         [this]() { showMainScreen(); });
     colorPickerScreen_->mount(root_);
@@ -54,6 +57,7 @@ void AppNavigator::showNetworkInfoScreen()
     mainScreen_.reset();
     colorPickerScreen_.reset();
     wifiConfigScreen_.reset();
+    themePreviewScreen_.reset();
     networkInfoScreen_ = factory_.createNetworkInfoScreen(
         [this]() { showMainScreen(); });
     networkInfoScreen_->mount(root_);
@@ -68,6 +72,7 @@ void AppNavigator::showWifiConfigScreen()
     mainScreen_.reset();
     colorPickerScreen_.reset();
     networkInfoScreen_.reset();
+    themePreviewScreen_.reset();
     wifiConfigScreen_ = factory_.createWifiConfigScreen();
     wifiConfigScreen_->mount(root_);
 }
@@ -75,6 +80,18 @@ void AppNavigator::showWifiConfigScreen()
 void AppNavigator::closeWifiConfigScreen()
 {
     showMainScreen();
+}
+
+void AppNavigator::showThemePreviewScreen()
+{
+    clearRoot();
+    mainScreen_.reset();
+    colorPickerScreen_.reset();
+    wifiConfigScreen_.reset();
+    networkInfoScreen_.reset();
+    themePreviewScreen_ = factory_.createThemePreviewScreen(
+        [this]() { showMainScreen(); });
+    themePreviewScreen_->mount(root_);
 }
 
 screens::WifiConfigScreen* AppNavigator::wifiConfigScreen()

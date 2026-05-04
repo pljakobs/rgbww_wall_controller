@@ -12,6 +12,7 @@
 #include "ui/screens/MainScreen.h"
 #include "ui/screens/ColorPickerScreen.h"
 #include "ui/screens/NetworkInfoScreen.h"
+#include "ui/screens/ThemePreviewScreen.h"
 #include "ui/screens/WifiConfigScreen.h"
 
 namespace lightinator::ui {
@@ -26,13 +27,14 @@ namespace lightinator::ui {
 class AppNavigator {
 public:
     AppNavigator(lv_obj_t* root, UiStateStore& state, core::HsvColor& currentColor,
-                 const core::UiTheme& theme = core::nordicDarkTheme());
+                 const core::UiTheme& theme);
 
     void showMainScreen();
     void showColorPickerScreen();
     void showNetworkInfoScreen();
     void showWifiConfigScreen();
     void closeWifiConfigScreen();
+    void showThemePreviewScreen();
 
     screens::WifiConfigScreen*   wifiConfigScreen();
     screens::MainScreen*         mainScreen();
@@ -52,10 +54,11 @@ private:
     lv_obj_t*        root_;
     ScreenFactory    factory_;
 
-    std::unique_ptr<screens::MainScreen>        mainScreen_;
-    std::unique_ptr<screens::ColorPickerScreen> colorPickerScreen_;
-    std::unique_ptr<screens::WifiConfigScreen>  wifiConfigScreen_;
-    std::unique_ptr<screens::NetworkInfoScreen> networkInfoScreen_;
+    std::unique_ptr<screens::MainScreen>           mainScreen_;
+    std::unique_ptr<screens::ColorPickerScreen>    colorPickerScreen_;
+    std::unique_ptr<screens::WifiConfigScreen>     wifiConfigScreen_;
+    std::unique_ptr<screens::NetworkInfoScreen>    networkInfoScreen_;
+    std::unique_ptr<screens::ThemePreviewScreen>   themePreviewScreen_;
 
     std::function<void(screens::NetworkInfoScreen*)> onNetworkInfoScreenChanged_;
 };

@@ -70,7 +70,7 @@ void HsvColorPicker::mount(lv_obj_t* parent)
     hueSlider_->SetRange(0, 359);
     hueSlider_->SetValue(core::toLvHue(color_.h), LV_ANIM_OFF);
     hueSlider_->SetStylePadVer(10, LV_PART_MAIN);
-    hueSlider_->SetStyleSize(32, LV_PART_KNOB);
+    hueSlider_->SetStyleSize(48, LV_PART_KNOB);
     hueSlider_->AddEventCbValueChanged(onHueSliderEvent, this);
     lv_obj_add_event_cb(hueSlider_->GetObj(), onHueSliderEvent, LV_EVENT_RELEASED, this);
     gradientHue_ = color_.h;

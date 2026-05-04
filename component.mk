@@ -13,7 +13,7 @@ ESP_VARIANT := esp32s3
 ifneq (,$(wildcard $(CURDIR)/sdkconfig.custom))
 SDK_CUSTOM_CONFIG := sdkconfig.custom
 endif
-
+SDK_CUSTOM_CONFIG := $(PROJECT_DIR)/sdkconfig.custom
 HWCONFIG=partitions
 
 export COMPONENT_SEARCH_DIRS := \

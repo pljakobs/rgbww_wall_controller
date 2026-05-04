@@ -35,6 +35,23 @@ void DecoratedScreen::mount(lv_obj_t* parent)
     lv_obj_set_flex_flow(header, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(header, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
+    if (options_.showBurger) {
+        burgerButton_ = std::make_unique<lvgl::widget::Button>(header);
+        lv_obj_t* burger = burgerButton_->GetObj();
+        lv_obj_set_size(burger, 44, 44);
+        lv_obj_set_flex_grow(burger, 0);
+        lv_obj_set_style_radius(burger, 8, 0);
+        lv_obj_set_style_bg_color(burger, lv_color_hex(0x224F77), 0);
+        lv_obj_set_style_border_width(burger, 0, 0);
+        lv_obj_set_style_pad_all(burger, 0, 0);
+        lv_obj_add_event_cb(burger, onBurgerButtonEvent, LV_EVENT_CLICKED, this);
+
+        auto* burgerLabel = lv_label_create(burger);
+        lv_label_set_text_static(burgerLabel, LV_SYMBOL_LIST);
+        lv_obj_set_style_text_color(burgerLabel, lv_color_white(), 0);
+        lv_obj_center(burgerLabel);
+    }
+
     titleLabel_ = std::make_unique<lvgl::widget::Label>(header);
     lv_obj_t* title = titleLabel_->GetObj();
     lv_label_set_text(title, options_.text);
@@ -124,6 +141,11 @@ void DecoratedScreen::setOnCloseRequested(std::function<void()> callback)
     onCloseRequested_ = std::move(callback);
 }
 
+void DecoratedScreen::setOnBurgerTapped(std::function<void()> callback)
+{
+    onBurgerTapped_ = std::move(callback);
+}
+
 void DecoratedScreen::setOnHeaderStatusIconTapped(std::function<void()> callback)
 {
     onHeaderStatusIconTapped_ = std::move(callback);
@@ -138,6 +160,18 @@ void DecoratedScreen::onCloseButtonEvent(lv_event_t* event)
 
     if (self->onCloseRequested_) {
         self->onCloseRequested_();
+    }
+}
+
+void DecoratedScreen::onBurgerButtonEvent(lv_event_t* event)
+{
+    auto* self = static_cast<DecoratedScreen*>(lv_event_get_user_data(event));
+    if (self == nullptr) {
+        return;
+    }
+
+    if (self->onBurgerTapped_) {
+        self->onBurgerTapped_();
     }
 }
 

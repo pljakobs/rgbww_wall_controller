@@ -40,7 +40,7 @@ public:
 
 private:
     core::HsvColor currentColor_;
-    core::UiTheme  theme_;
+    core::UiTheme  theme_ = core::nordicDarkTheme();
     UiStateStore state_;
     NetworkInfoPresenter networkInfoPresenter_;
 

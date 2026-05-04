@@ -4,7 +4,7 @@
     "options": [],
     "devices": {
         "spiFlash": {
-            "size": "4M"
+            "size": "16M"
         }
     },
     "partitions": {

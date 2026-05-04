@@ -187,8 +187,8 @@
         }
       }
     },
-    
     "active_theme": {
-      "type": "string"    }
+      "type": "string"
+    }
   }
 }

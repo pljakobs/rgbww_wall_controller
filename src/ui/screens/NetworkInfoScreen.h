@@ -19,7 +19,7 @@ public:
         String ip;
     };
 
-    explicit NetworkInfoScreen(const core::UiTheme& theme = core::nordicDarkTheme());
+    explicit NetworkInfoScreen(const core::UiTheme& theme);
 
     void mount(lv_obj_t* parent) override;
 

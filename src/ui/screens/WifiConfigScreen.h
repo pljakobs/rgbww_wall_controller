@@ -16,7 +16,7 @@ namespace lightinator::ui::screens {
 
 class WifiConfigScreen : public core::Screen {
 public:
-    explicit WifiConfigScreen(const core::UiTheme& theme = core::nordicDarkTheme());
+    explicit WifiConfigScreen(const core::UiTheme& theme);
 
     void mount(lv_obj_t* parent) override;
 

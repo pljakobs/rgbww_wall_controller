@@ -11,6 +11,7 @@
 #include "ui/screens/ColorPickerScreen.h"
 #include "ui/screens/MainScreen.h"
 #include "ui/screens/NetworkInfoScreen.h"
+#include "ui/screens/ThemePreviewScreen.h"
 #include "ui/screens/WifiConfigScreen.h"
 
 namespace lightinator::ui {
@@ -28,7 +29,8 @@ public:
 
     std::unique_ptr<screens::MainScreen> createMainScreen(
         std::function<void()> onOpenColorPicker,
-        std::function<void()> onOpenNetworkInfo);
+        std::function<void()> onOpenNetworkInfo,
+        std::function<void()> onOpenThemePreview);
 
     std::unique_ptr<screens::ColorPickerScreen> createColorPickerScreen(
         std::function<void()> onClose);
@@ -37,6 +39,9 @@ public:
         std::function<void()> onClose);
 
     std::unique_ptr<screens::WifiConfigScreen> createWifiConfigScreen();
+
+    std::unique_ptr<screens::ThemePreviewScreen> createThemePreviewScreen(
+        std::function<void()> onClose);
 
 private:
     UiStateStore&      state_;

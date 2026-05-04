@@ -18,6 +18,7 @@ struct HeaderOptions {
     lv_color_t color = lv_color_hex(0x4189C8);
     const lv_font_t* font = &lv_font_montserrat_36;
     bool showClose = false;
+    bool showBurger = false;
 };
 
 class DecoratedScreen : public core::Screen, public core::SlotHost {
@@ -32,18 +33,22 @@ public:
     void setOnHeaderStatusIconTapped(std::function<void()> callback);
 
     void setOnCloseRequested(std::function<void()> callback);
+    void setOnBurgerTapped(std::function<void()> callback);
 
 private:
     static void onCloseButtonEvent(lv_event_t* event);
+    static void onBurgerButtonEvent(lv_event_t* event);
     static void onHeaderStatusIconEvent(lv_event_t* event);
 
     HeaderOptions options_;
     std::function<void()> onCloseRequested_;
+    std::function<void()> onBurgerTapped_;
     std::function<void()> onHeaderStatusIconTapped_;
 
     std::unique_ptr<lvgl::widget::Object> rootObj_;
     std::unique_ptr<lvgl::widget::Object> headerObj_;
     std::unique_ptr<lvgl::widget::Object> bodyObj_;
+    std::unique_ptr<lvgl::widget::Button> burgerButton_;
     std::unique_ptr<lvgl::widget::Label> titleLabel_;
     std::unique_ptr<lvgl::widget::Object> statusIconBox_;
     std::unique_ptr<lvgl::widget::Label> statusIconLabel_;

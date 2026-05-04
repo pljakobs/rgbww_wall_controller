@@ -34,18 +34,20 @@ void WifiConfigScreen::mount(lv_obj_t* parent)
 
     networksLabel_ = std::make_unique<lvgl::widget::Label>(bodyLayout_->GetObj());
     lv_label_set_text_static(networksLabel_->GetObj(), "Networks");
-    networksLabel_->SetStyleTextColor(lv_color_hex(0xD8DEE9), 0);
+    networksLabel_->SetStyleTextColor(theme_.colors.contentFg, 0)
+        ->SetStyleTextFont(theme_.fonts.contentSubheader, 0);
 
     networksList_ = std::make_unique<lvgl::widget::List>(bodyLayout_->GetObj());
     networksList_->SetSize(lv_pct(100), 130)
         ->SetStyleRadius(10, 0)
-        ->SetStyleBgColor(lv_color_hex(0x1A1F28), 0)
+        ->SetStyleBgColor(theme_.colors.contentBg, 0)
         ->SetStyleBorderWidth(1, 0)
-        ->SetStyleBorderColor(lv_color_hex(0x2A313E), 0);
+        ->SetStyleBorderColor(theme_.colors.shadow, 0);
 
     ssidLabel_ = std::make_unique<lvgl::widget::Label>(bodyLayout_->GetObj());
     lv_label_set_text_static(ssidLabel_->GetObj(), "SSID");
-    ssidLabel_->SetStyleTextColor(lv_color_hex(0xD8DEE9), 0);
+    ssidLabel_->SetStyleTextColor(theme_.colors.contentFg, 0)
+        ->SetStyleTextFont(theme_.fonts.contentSubheader, 0);
 
     ssidField_ = std::make_unique<lvgl::widget::TextArea>(bodyLayout_->GetObj());
     ssidField_->SetWidth(lv_pct(100));
@@ -53,14 +55,16 @@ void WifiConfigScreen::mount(lv_obj_t* parent)
     lv_textarea_set_placeholder_text(ssidField_->GetObj(), "Select from list or type hidden SSID");
     ssidField_->SetStyleRadius(8, 0)
         ->SetStyleBorderWidth(1, 0)
-        ->SetStyleBorderColor(lv_color_hex(0x2A313E), 0)
-        ->SetStyleBgColor(lv_color_hex(0x121820), 0)
-        ->SetStyleTextColor(lv_color_hex(0xE6EDF3), 0);
+        ->SetStyleBorderColor(theme_.colors.shadow, 0)
+        ->SetStyleBgColor(theme_.colors.contentBg, 0)
+        ->SetStyleTextColor(theme_.colors.contentFg, 0)
+        ->SetStyleTextFont(theme_.fonts.contentSubheader, 0);
     lv_obj_add_event_cb(ssidField_->GetObj(), onTextAreaEvent, LV_EVENT_ALL, this);
 
     passwordLabel_ = std::make_unique<lvgl::widget::Label>(bodyLayout_->GetObj());
     lv_label_set_text_static(passwordLabel_->GetObj(), "Password");
-    passwordLabel_->SetStyleTextColor(lv_color_hex(0xD8DEE9), 0);
+    passwordLabel_->SetStyleTextColor(theme_.colors.contentFg, 0)
+        ->SetStyleTextFont(theme_.fonts.contentSubheader, 0);
 
     passwordRow_ = std::make_unique<lvgl::widget::Object>(bodyLayout_->GetObj());
     passwordRow_->SetWidth(lv_pct(100))
@@ -79,20 +83,23 @@ void WifiConfigScreen::mount(lv_obj_t* parent)
     lv_textarea_set_placeholder_text(passwordField_->GetObj(), "WiFi password");
     passwordField_->SetStyleRadius(8, 0)
         ->SetStyleBorderWidth(1, 0)
-        ->SetStyleBorderColor(lv_color_hex(0x2A313E), 0)
-        ->SetStyleBgColor(lv_color_hex(0x121820), 0)
-        ->SetStyleTextColor(lv_color_hex(0xE6EDF3), 0);
+        ->SetStyleBorderColor(theme_.colors.shadow, 0)
+        ->SetStyleBgColor(theme_.colors.contentBg, 0)
+        ->SetStyleTextColor(theme_.colors.contentFg, 0)
+        ->SetStyleTextFont(theme_.fonts.contentSubheader, 0);
     lv_obj_add_event_cb(passwordField_->GetObj(), onTextAreaEvent, LV_EVENT_ALL, this);
 
     passwordToggleBtn_ = std::make_unique<lvgl::widget::Button>(passwordRow_->GetObj());
     passwordToggleBtn_->SetSize(52, 44)
         ->SetStyleRadius(8, 0)
-        ->SetStyleBgColor(lv_color_hex(0x1A1F28), 0)
+        ->SetStyleBgColor(theme_.colors.buttonBg, 0)
         ->SetStyleBorderWidth(1, 0)
-        ->SetStyleBorderColor(lv_color_hex(0x2A313E), 0)
+        ->SetStyleBorderColor(theme_.colors.shadow, 0)
         ->AddEventCbClicked(onPasswordToggleEvent, this);
     auto* toggleLabel = lv_label_create(passwordToggleBtn_->GetObj());
     lv_label_set_text_static(toggleLabel, LV_SYMBOL_EYE_OPEN);
+    lv_obj_set_style_text_color(toggleLabel, theme_.colors.buttonFg, 0);
+    lv_obj_set_style_text_font(toggleLabel, theme_.fonts.subheader, 0);
     lv_obj_center(toggleLabel);
 
     actionsRow_ = std::make_unique<lvgl::widget::Object>(bodyLayout_->GetObj());
@@ -110,12 +117,14 @@ void WifiConfigScreen::mount(lv_obj_t* parent)
         ->SetStyleRadius(10, 0)
         ->SetStylePadLeft(18, 0)
         ->SetStylePadRight(18, 0)
-        ->SetStyleBgColor(lv_color_hex(0x1D5A8E), 0)
+        ->SetStyleBgColor(theme_.colors.buttonBg, 0)
         ->SetStyleBorderWidth(0, 0)
         ->AddEventCbClicked(onConnectButtonEvent, this);
 
     auto* connectLabel = lv_label_create(connectButton_->GetObj());
     lv_label_set_text_static(connectLabel, "connect");
+    lv_obj_set_style_text_color(connectLabel, theme_.colors.buttonFg, 0);
+    lv_obj_set_style_text_font(connectLabel, theme_.fonts.subheader, 0);
     lv_obj_center(connectLabel);
 
     statusField_ = std::make_unique<lvgl::widget::TextArea>(actionsRow_->GetObj());
@@ -129,10 +138,10 @@ void WifiConfigScreen::mount(lv_obj_t* parent)
     lv_obj_add_state(statusField_->GetObj(), LV_STATE_DISABLED);
     statusField_->SetStyleRadius(10, 0)
         ->SetStyleBorderWidth(1, 0)
-        ->SetStyleBorderColor(lv_color_hex(0x2A313E), 0)
-        ->SetStyleBgColor(lv_color_hex(0x11161E), 0)
-        ->SetStyleTextColor(lv_color_hex(0xAAB7C4), 0)
-        ->SetStyleTextFont(&lv_font_montserrat_24, 0)
+        ->SetStyleBorderColor(theme_.colors.shadow, 0)
+        ->SetStyleBgColor(theme_.colors.contentBg, 0)
+        ->SetStyleTextColor(theme_.colors.contentFg, 0)
+        ->SetStyleTextFont(theme_.fonts.contentSubheader, 0)
         ->SetStylePadAll(8, 0);
 
     keyboard_ = lv_keyboard_create(parent);
@@ -141,7 +150,7 @@ void WifiConfigScreen::mount(lv_obj_t* parent)
     lv_keyboard_set_popovers(keyboard_, true);
     lv_obj_set_style_pad_row(keyboard_, 8, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_column(keyboard_, 8, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(keyboard_, &lv_font_montserrat_24, LV_PART_ITEMS | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(keyboard_, theme_.fonts.subheader, LV_PART_ITEMS | LV_STATE_DEFAULT);
     lv_obj_add_flag(keyboard_, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_event_cb(keyboard_, onKeyboardEvent, LV_EVENT_READY, this);
     lv_obj_add_event_cb(keyboard_, onKeyboardEvent, LV_EVENT_CANCEL, this);

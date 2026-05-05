@@ -187,55 +187,144 @@ Definition of done for architecture stabilization
 4. At least one full screen flow is presenter-driven end-to-end (Network Info recommended first).
 
 
-Issues:
-- [x] Menu
-  - [x] the hamburger menu sits in a button with shadow - the button should be opaque on the background (the main screen header in this case) like the wifi icon is
-  - [x] the menu, while only using half the screen width, backs out the right half of the screen, too, it should be a pure overlay
-  - [x] the menu should be 75% opaque
-  - [x] the menu should sit right underneath the header, currently it has about 10px top gutter
-  - [x] the menu seems longer than the screen and makes the screen show a scroll bar - if the menu content is longer than the screen, the menu should have a scroller
-- [x] Network Info screen
-  - [x] the close button sits in a button with shadow - same as with the hamburger menu button
-  - [x] the content text does not use the theme settings
-- [x] color picker
-  - [x] the hue slider is difficult to use because the slider button is too small and too close to the active area of the s/v square. move it to the right of the square and make the slider button 200%
-  - [x] maybe the okay button could also move to the right side, giving more space for the s/v square
-  - [x] same close button isuse
-- [x] Theme viewer
-  - [x] saving the schema (it shoudl be called "save theme") doesn't seem to add a new theme but overwrites it
-    - [x] saving a theme with the same name should overwrite an existing theme
-    - [x] saving a theme with a new name should create a new one
-    - [x] selecting a theme should immediately apply the theme if possible
-    - [x] the font sliders are really hard to hit and move, and the values are not sensible anyway, as we only have a limited number of fonts. the different fonts should instead have a drop down that allows the user to select from the installed fonts
-- color picker
-  - [x] color picker was now too large, Ive reduced it from 96 to 64, but the slide strip should also be narrower
-  - [x] in the color picker, the ok button should sit below the color picker hue slider, not to the right of it
-  - [x] in the theme editor, the color picker does not fit the space it's given
-- overal performance
-  - [x] specifically the theme editor feels exessively slow
 
+Performance optimization:
 
-- enhancements
-  - create a set of pre-defined themes based on https://vuetifyjs.com/en/styles/colors/#material-colors - name being the base color name
-    - theme name is the base color name
-    - header Bg is -darken-3
-    - header Fg is -lighten-5
-    - content Bg is base hue with s=10 and v=10
-    - content Fg is -lighten-4
-    - button Bg is -accent-2
-    - button Fg is -lighten-4
-    - shadow is is darken-4 with v=25
-    - danger Bg is -accent-3
-    - danger Fg is -accent-1
+  - object reuse (done for menu, continue elsewhere)
+  - avoid remount/recreate churn
+  - diff-based updates
+  - async flush/buffer tuning
 
-Issues:
-- color picker:
-  - [x] can we find a speed vs size balance for the S/V selector. I suggest a graded shading model perhaps? right after a hue update even, the square is re-drawn in 8x8 cells, if the slider has not been mvoed for 50ms, it's redrawn as 1x1. Would that speed up things?
-  - [x] the square should really use all the available space if possible (different for color selector screen and theme editor color selector pop up)
-  - [x] the slider button is still very large, maybe 48px?
-  - [x] can we make the slider strip show the hue range?
-- themes
-  - [x] the theme selector seems not to show the in-flash themes
-  - [x] scrolling the themes popup is next to impossible
-  - [x] selecting a theme is difficult, too
-  - [x] once a theme is selected, it's not applied immediately 
+we need a setings page.
+among other this, that should allow to 
+- set the backlight brightness (store value in Configdb (see app-config.cfgdb))
+- set the backlight timeout
+- allow for touch calibration (five point calibration, corners and center, propose a json schama for the calibration matrix to be stored in configdb)
+
+Issues: 
+  - fixed: ghost touches are filtered with configurable stable touch time in the GT911 path
+  - fixed: the touch calibration screen registers touches using press/pressing hit-testing and captures raw touch data
+
+  - fixed: calibration screen shows only one active colored crosshair at a time
+  - fixed: calibration screen shows the detected position with a dimmed secondary crosshair
+  - fixed: screen backlight timeout switches off after inactivity and the wake touch is consumed
+  - fixed: the timeout slider uses 5s increments and the max value maps to "never" using `-1` in ConfigDB
+  - fixed: the backlight brightness slider previews live changes on a 20 ms throttle
+  - fixed: brightness changes are written to ConfigDB 250 ms after slider release
+   
+later:
+
+Moving from an integrated app and framework to a framework:
+
+Define stable framework interfaces.
+Move generic screens/components into a framework namespace/package.
+Keep app-specific services (WiFi, mDNS, ConfigDB, app wiring) in the application.
+Add storage adapters so theme editor/selector can save to JSON or ConfigDB through the same interface.
+What Belongs In Framework vs App
+Framework candidate:
+
+Theme model and theme rendering contract
+Theme selector screen
+Theme editor screen
+HSV color picker widget
+Generic navigable menu screen/pattern
+Base decorated screen/header shell
+Screen navigation primitives and factory interfaces
+Optional persistence abstraction for themes
+App-specific:
+
+ConfigDB implementation
+AppWIFI and network binders/presenters
+Product menu entries and feature routes
+Hardware bootstrap and platform setup
+Product defaults and product-specific theme packs
+Concrete Boundary Proposal
+Create three layers:
+
+UI Core (framework core)
+Theme types, base screen abstractions, navigation interfaces, generic widgets
+No ConfigDB, no WiFi, no product logic
+Mostly what is now in UiTheme.h, decorated screen base, color picker, selector/editor logic
+UI Feature Pack (framework features)
+ThemeSelectorScreen, ThemeEditorScreen, generic menu screen
+Depends only on UI Core + LVGL
+Uses interfaces for persistence and listing
+Product App
+Implements storage and service adapters
+Wires callbacks and routes
+Keeps current app services and state store
+Key Interfaces To Introduce
+These are the main seams that let you detach ConfigDB cleanly:
+
+Theme repository interface
+listThemes()
+getThemeById(id)
+saveTheme(theme)
+optional deleteTheme(id)
+Theme source metadata
+isBuiltin
+source type enum (builtin, user, imported)
+used by naming strategy in selector/editor
+Naming strategy interface
+suggestNameForEdit(theme, allThemes)
+default strategy can implement your current:
+builtin: name-user
+user: name-edit, name-edit-1, etc.
+Serializer interface
+toJson(theme)
+fromJson(json)
+lets you support JSON export/import and ConfigDB persistence side-by-side
+Menu model interface
+menu as data (items + actions), not hardcoded app buttons
+How Your Existing Files Map
+Good extraction candidates:
+
+ThemeSelectorScreen.cpp
+ThemePreviewScreen.cpp (rename to ThemeEditorScreen in framework)
+HsvColorPicker.cpp
+DecoratedScreen.cpp
+Needs app adapter after extraction:
+
+ScreenFactory.cpp
+AppNavigator.cpp
+builtin_themes.cpp (can be split into framework default pack + app pack)
+application.cpp
+Recommended Extraction Sequence
+
+Move theme domain types and naming logic into framework core.
+Extract ThemeSelectorScreen + ThemeEditorScreen to framework feature pack with repository interface.
+Extract HSV picker and DecoratedScreen.
+Replace direct callbacks in factory with injected interfaces from app layer.
+Add two repository implementations in app:
+ConfigDbThemeRepository
+JsonFileThemeRepository (or in-memory for test/dev)
+Keep AppNavigator in app first, then optionally provide a generic navigator helper later.
+Packaging Options
+
+Monorepo component style:
+Components/ui_framework_core
+Components/ui_framework_features
+Product app depends on both
+Separate repository:
+Better reusability/versioning
+Slightly higher initial setup effort
+Hybrid:
+Start as components in current repo, split later once stable
+Biggest Risks
+
+Callback sprawl and ownership issues across screen lifetimes
+Leaking app-specific assumptions into framework (ConfigDB IDs, product menu labels)
+Theme persistence coupling to one backend
+Navigation assumptions tied to one app route graph
+What To Do Next
+
+I can implement the first extraction step now: create a ThemeRepository interface and migrate selector/editor to use it behind ScreenFactory while leaving behavior unchanged.
+Then I can add a ConfigDB adapter and a JSON adapter side-by-side, so you can choose storage per build profile.
+If you want, I’ll start with step 1 directly and keep it as a non-breaking refactor.
+
+Qeuestion:
+- can the rendering be delegated to the 2nd core of the esp32s3? 
+  - sming usually diables the 2nd core and runs in a single (network) task
+  - sming itself is not thread safe (everything happens in the event loop)
+  - pushing the lvgl rendering to 2nd core needs specific message passing
+Decision: deferred

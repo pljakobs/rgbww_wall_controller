@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "ui/core/HsvColor.h"
+#include "ui/core/TouchCalibrationData.h"
 #include "ui/core/UiTheme.h"
 #include "ui/UiStateStore.h"
 #include "ui/AppNavigator.h"
@@ -33,6 +34,10 @@ public:
     void setOnThemeSaveRequested(std::function<bool(const core::UiTheme&)> callback);
     void setOnThemeListRequested(std::function<std::vector<core::UiTheme>()> callback);
     void setOnThemeApplyRequested(std::function<void(const core::UiTheme&)> callback);
+    void setOnSettingsLoadRequested(std::function<void(int&, int&)> callback);
+    void setOnSettingsSaveRequested(std::function<bool(int, int)> callback);
+    void setOnBrightnessPreviewRequested(std::function<void(int)> callback);
+    void setOnTouchCalibrationSaveRequested(std::function<bool(const core::TouchCalibrationCapture&)> callback);
 
     void showWifiConfigScreen();
     void closeWifiConfigScreen();
@@ -53,6 +58,10 @@ private:
     bool initialized_ = false;
     std::function<bool(const core::UiTheme&)> onThemeSaveRequested_;
     std::function<std::vector<core::UiTheme>()> onThemeListRequested_;
+    std::function<void(int&, int&)> onSettingsLoadRequested_;
+    std::function<bool(int, int)> onSettingsSaveRequested_;
+    std::function<void(int)> onBrightnessPreviewRequested_;
+    std::function<bool(const core::TouchCalibrationCapture&)> onTouchCalibrationSaveRequested_;
 
     std::unique_ptr<AppNavigator> navigator_;
 };

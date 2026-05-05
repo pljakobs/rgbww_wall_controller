@@ -189,6 +189,185 @@
     },
     "active_theme": {
       "type": "string"
+    },
+    "display": {
+      "type": "object",
+      "properties": {
+        "brightness": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 80
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": -1,
+          "maximum": 600,
+          "default": 30
+        },
+        "touch_stable_press_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 50
+        },
+        "touch_calibration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "screen",
+            "matrix",
+            "points"
+          ],
+          "properties": {
+            "screen": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["width", "height"],
+              "properties": {
+                "width": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 480
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 480
+                }
+              }
+            },
+            "matrix": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "a": { "type": "number", "default": 1 },
+                "b": { "type": "number", "default": 0 },
+                "c": { "type": "number", "default": 0 },
+                "d": { "type": "number", "default": 0 },
+                "e": { "type": "number", "default": 1 },
+                "f": { "type": "number", "default": 0 }
+              }
+            },
+            "points": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "p1": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "reference": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 40 },
+                        "y": { "type": "integer", "default": 40 }
+                      }
+                    },
+                    "raw": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 0 },
+                        "y": { "type": "integer", "default": 0 }
+                      }
+                    }
+                  }
+                },
+                "p2": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "reference": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 440 },
+                        "y": { "type": "integer", "default": 40 }
+                      }
+                    },
+                    "raw": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 0 },
+                        "y": { "type": "integer", "default": 0 }
+                      }
+                    }
+                  }
+                },
+                "p3": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "reference": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 440 },
+                        "y": { "type": "integer", "default": 440 }
+                      }
+                    },
+                    "raw": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 0 },
+                        "y": { "type": "integer", "default": 0 }
+                      }
+                    }
+                  }
+                },
+                "p4": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "reference": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 40 },
+                        "y": { "type": "integer", "default": 440 }
+                      }
+                    },
+                    "raw": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 0 },
+                        "y": { "type": "integer", "default": 0 }
+                      }
+                    }
+                  }
+                },
+                "p5": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "reference": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 240 },
+                        "y": { "type": "integer", "default": 240 }
+                      }
+                    },
+                    "raw": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 0 },
+                        "y": { "type": "integer", "default": 0 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

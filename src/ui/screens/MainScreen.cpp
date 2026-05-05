@@ -105,6 +105,11 @@ void MainScreen::setOnOpenThemePreviewRequested(std::function<void()> callback)
     onOpenThemePreviewRequested_ = std::move(callback);
 }
 
+void MainScreen::setOnOpenSettingsRequested(std::function<void()> callback)
+{
+    onOpenSettingsRequested_ = std::move(callback);
+}
+
 void MainScreen::setOnOpenMenuTestRequested(std::function<void()> callback)
 {
     onOpenMenuTestRequested_ = std::move(callback);
@@ -163,6 +168,18 @@ void MainScreen::onMenuNetworkInfoEvent(lv_event_t* event)
     self->hideBurgerMenu();
     if (self->onOpenNetworkInfoRequested_) {
         self->onOpenNetworkInfoRequested_();
+    }
+}
+
+void MainScreen::onMenuSettingsEvent(lv_event_t* event)
+{
+    auto* self = static_cast<MainScreen*>(lv_event_get_user_data(event));
+    if (self == nullptr) {
+        return;
+    }
+    self->hideBurgerMenu();
+    if (self->onOpenSettingsRequested_) {
+        self->onOpenSettingsRequested_();
     }
 }
 
@@ -264,10 +281,15 @@ void MainScreen::showBurgerMenu()
         styleListButton(themeItem);
         lv_obj_add_event_cb(themeItem, onMenuThemeEvent, LV_EVENT_CLICKED, this);
 
+    // ui-scaffold:main-left:Settings:menu-item
+    lv_obj_t* settingsItem = lv_list_add_btn(list, nullptr, "Settings");
+    styleListButton(settingsItem);
+    lv_obj_add_event_cb(settingsItem, onMenuSettingsEvent, LV_EVENT_CLICKED, this);
+
         // ui-scaffold:main-left:MenuTest:menu-item
-        lv_obj_t* generatedItem = lv_list_add_btn(list, nullptr, "MenuTest");
-        styleListButton(generatedItem);
-        lv_obj_add_event_cb(generatedItem, onMenuMenuTestEvent, LV_EVENT_CLICKED, this);
+        lv_obj_t* menuTestItem = lv_list_add_btn(list, nullptr, "MenuTest");
+        styleListButton(menuTestItem);
+        lv_obj_add_event_cb(menuTestItem, onMenuMenuTestEvent, LV_EVENT_CLICKED, this);
     }
 
     lv_obj_t* overlay = burgerMenuOverlay_.get();

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "ui/core/HsvColor.h"
+#include "ui/core/TouchCalibrationData.h"
 #include "ui/core/UiTheme.h"
 #include "ui/UiStateStore.h"
 #include "ui/ScreenFactory.h"
@@ -16,6 +17,8 @@
 #include "ui/screens/ThemePreviewScreen.h"
 #include "ui/screens/ThemeSelectorScreen.h"
 #include "ui/screens/WifiConfigScreen.h"
+#include "ui/screens/TouchCalibrationScreen.h"
+#include "ui/screens/SettingsScreen.h"
 #include "ui/screens/MenuTestScreen.h"
 
 namespace lightinator::ui {
@@ -33,7 +36,11 @@ public:
                  const core::UiTheme& theme,
                  std::function<bool(const core::UiTheme&)> onSaveTheme,
                  std::function<std::vector<core::UiTheme>()> onThemeList,
-                 std::function<void(const core::UiTheme&)> onApplyTheme);
+                 std::function<void(const core::UiTheme&)> onApplyTheme,
+                 std::function<void(int&, int&)> onLoadSettings,
+                 std::function<bool(int, int)> onSaveSettings,
+                 std::function<void(int)> onPreviewBrightness,
+                 std::function<bool(const core::TouchCalibrationCapture&)> onSaveTouchCalibration);
 
     void showMainScreen();
     void showColorPickerScreen();
@@ -41,6 +48,8 @@ public:
     void showWifiConfigScreen();
     void closeWifiConfigScreen();
     void showThemePreviewScreen();
+    void showTouchCalibrationScreen();
+    void showSettingsScreen();
         void showThemeSelectorScreen();
         void showThemeEditorScreen(const core::UiTheme& themeToEdit, const String& suggestedName);
     void showMenuTestScreen();
@@ -68,6 +77,8 @@ private:
         ThemePreview,
         ThemeSelector,
         ThemeEditor,
+        Settings,
+        TouchCalibration,
         MenuTest,
     };
 
@@ -82,6 +93,8 @@ private:
     std::unique_ptr<screens::WifiConfigScreen>     wifiConfigScreen_;
     std::unique_ptr<screens::NetworkInfoScreen>    networkInfoScreen_;
     std::unique_ptr<screens::ThemePreviewScreen>   themePreviewScreen_;
+    std::unique_ptr<screens::TouchCalibrationScreen>   touchCalibrationScreen_;
+    std::unique_ptr<screens::SettingsScreen>   settingsScreen_;
         std::unique_ptr<screens::ThemeSelectorScreen>  themeSelectorScreen_;
         /// themePreviewScreen_ is reused as the editor in the new two-screen flow.
     std::unique_ptr<screens::MenuTestScreen>   menuTestScreen_;

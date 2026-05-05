@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "ui/core/HsvColor.h"
+#include "ui/core/TouchCalibrationData.h"
 #include "ui/core/UiTheme.h"
 #include "ui/UiStateStore.h"
 #include "ui/screens/ColorPickerScreen.h"
@@ -15,6 +16,8 @@
 #include "ui/screens/ThemePreviewScreen.h"
 #include "ui/screens/ThemeSelectorScreen.h"
 #include "ui/screens/WifiConfigScreen.h"
+#include "ui/screens/TouchCalibrationScreen.h"
+#include "ui/screens/SettingsScreen.h"
 #include "ui/screens/MenuTestScreen.h"
 
 namespace lightinator::ui {
@@ -31,7 +34,11 @@ public:
     ScreenFactory(UiStateStore& state, core::HsvColor& currentColor, const core::UiTheme& theme,
                   std::function<bool(const core::UiTheme&)> onSaveTheme,
                   std::function<std::vector<core::UiTheme>()> onThemeList,
-                  std::function<void(const core::UiTheme&)> onApplyTheme);
+                  std::function<void(const core::UiTheme&)> onApplyTheme,
+                  std::function<void(int&, int&)> onLoadSettings,
+                  std::function<bool(int, int)> onSaveSettings,
+                  std::function<void(int)> onPreviewBrightness,
+                  std::function<bool(const core::TouchCalibrationCapture&)> onSaveTouchCalibration);
 
     void setTheme(const core::UiTheme& theme);
 
@@ -50,6 +57,14 @@ public:
 
     std::unique_ptr<screens::ThemePreviewScreen> createThemePreviewScreen(
         std::function<void()> onClose);
+
+    std::unique_ptr<screens::TouchCalibrationScreen> createTouchCalibrationScreen(
+        std::function<void()> onClose,
+        std::function<void()> onSaved);
+
+    std::unique_ptr<screens::SettingsScreen> createSettingsScreen(
+        std::function<void()> onClose,
+        std::function<void()> onOpenTouchCalibration);
 
     std::unique_ptr<screens::ThemeSelectorScreen> createThemeSelectorScreen(
         std::function<void()> onClose,
@@ -70,6 +85,10 @@ private:
     std::function<bool(const core::UiTheme&)> onSaveTheme_;
     std::function<std::vector<core::UiTheme>()> onThemeList_;
     std::function<void(const core::UiTheme&)> onApplyTheme_;
+    std::function<void(int&, int&)> onLoadSettings_;
+    std::function<bool(int, int)> onSaveSettings_;
+    std::function<void(int)> onPreviewBrightness_;
+    std::function<bool(const core::TouchCalibrationCapture&)> onSaveTouchCalibration_;
 };
 
 } // namespace lightinator::ui

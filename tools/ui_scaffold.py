@@ -146,6 +146,14 @@ def insert_before(content: str, anchor: str, snippet: str) -> str:
     return content[:idx] + snippet + content[idx:]
 
 
+def insert_after_regex(content: str, pattern: str, snippet: str) -> str:
+    match = re.search(pattern, content, flags=re.MULTILINE)
+    if not match:
+        raise PatchError(f"Anchor regex not found: {pattern}")
+    pos = match.end()
+    return content[:pos] + snippet + content[pos:]
+
+
 def generate_header(spec: ScreenSpec) -> str:
     has_close = spec.flow in {"close", "close-ok-cancel", "wizard"}
     has_ok_cancel = spec.flow in {"ok-cancel", "close-ok-cancel", "wizard"}
@@ -504,8 +512,11 @@ void MainScreen::onMenu{spec.base_name}Event(lv_event_t* event)
 }}
 """
     if f"void MainScreen::onMenu{spec.base_name}Event(" not in cpp:
-        anchor_handler = "void MainScreen::onMenuNetworkInfoEvent(lv_event_t* event)\n{\n    auto* self = static_cast<MainScreen*>(lv_event_get_user_data(event));\n    if (self == nullptr) {\n        return;\n    }\n    self->hideBurgerMenu();\n    if (self->onOpenNetworkInfoRequested_) {\n        self->onOpenNetworkInfoRequested_();\n    }\n}\n"
-        cpp = insert_after(cpp, anchor_handler, handler_impl)
+        cpp = insert_after_regex(
+            cpp,
+            r"void MainScreen::onMenuNetworkInfoEvent\(lv_event_t\* event\)\n\{[\s\S]*?\n\}\n",
+            handler_impl,
+        )
 
     marker = f"// ui-scaffold:{menu_name}:{spec.base_name}:menu-item"
     if marker not in cpp:
@@ -515,8 +526,11 @@ void MainScreen::onMenu{spec.base_name}Event(lv_event_t* event)
     styleListButton(generatedItem);
     lv_obj_add_event_cb(generatedItem, onMenu{spec.base_name}Event, LV_EVENT_CLICKED, this);
 """
-        anchor = "    lv_obj_t* themeItem = lv_list_add_btn(list, nullptr, \"Theme View\");\n    styleListButton(themeItem);\n    lv_obj_add_event_cb(themeItem, onMenuThemeEvent, LV_EVENT_CLICKED, this);\n"
-        cpp = insert_after(cpp, anchor, menu_block)
+        cpp = insert_after_regex(
+            cpp,
+            r"\n\s*lv_obj_t\*\s+themeItem\s*=\s*lv_list_add_btn\(list,\s*nullptr,\s*\"Theme View\"\);\n\s*styleListButton\(themeItem\);\n\s*lv_obj_add_event_cb\(themeItem,\s*onMenuThemeEvent,\s*LV_EVENT_CLICKED,\s*this\);\n",
+            menu_block,
+        )
 
     apply_or_print(h_path, h, dry_run)
     apply_or_print(cpp_path, cpp, dry_run)

@@ -47,6 +47,20 @@ bool AppUi::init()
             if (s_onThemeApplyRequested && theme.id.length() != 0) {
                 s_onThemeApplyRequested(theme);
             }
+        },
+        onSettingsLoadRequested_ ? onSettingsLoadRequested_ : [](int& brightness, int& timeout) {
+            brightness = 80;
+            timeout = 30;
+        },
+        onSettingsSaveRequested_ ? onSettingsSaveRequested_ : [](int, int) {
+            return true;
+        },
+        onBrightnessPreviewRequested_,
+        [this](const core::TouchCalibrationCapture& capture) {
+            if (!onTouchCalibrationSaveRequested_) {
+                return true;
+            }
+            return onTouchCalibrationSaveRequested_(capture);
         });
     navigator_->setOnNetworkInfoScreenChanged(
         [this](screens::NetworkInfoScreen* screen) {
@@ -86,6 +100,26 @@ void AppUi::setOnThemeListRequested(std::function<std::vector<core::UiTheme>()> 
 void AppUi::setOnThemeApplyRequested(std::function<void(const core::UiTheme&)> callback)
 {
     s_onThemeApplyRequested = std::move(callback);
+}
+
+void AppUi::setOnSettingsLoadRequested(std::function<void(int&, int&)> callback)
+{
+    onSettingsLoadRequested_ = std::move(callback);
+}
+
+void AppUi::setOnSettingsSaveRequested(std::function<bool(int, int)> callback)
+{
+    onSettingsSaveRequested_ = std::move(callback);
+}
+
+void AppUi::setOnBrightnessPreviewRequested(std::function<void(int)> callback)
+{
+    onBrightnessPreviewRequested_ = std::move(callback);
+}
+
+void AppUi::setOnTouchCalibrationSaveRequested(std::function<bool(const core::TouchCalibrationCapture&)> callback)
+{
+    onTouchCalibrationSaveRequested_ = std::move(callback);
 }
 
 void AppUi::showWifiConfigScreen()

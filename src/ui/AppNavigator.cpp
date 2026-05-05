@@ -5,8 +5,9 @@ namespace lightinator::ui {
 AppNavigator::AppNavigator(lv_obj_t* root, UiStateStore& state, core::HsvColor& currentColor,
                            const core::UiTheme& theme,
                            std::function<bool(const core::UiTheme&)> onSaveTheme,
-                           std::function<std::vector<core::UiTheme>()> onThemeList)
-    : root_(root), factory_(state, currentColor, theme, std::move(onSaveTheme), std::move(onThemeList))
+                           std::function<std::vector<core::UiTheme>()> onThemeList,
+                           std::function<void(const core::UiTheme&)> onApplyTheme)
+    : root_(root), factory_(state, currentColor, theme, std::move(onSaveTheme), std::move(onThemeList), std::move(onApplyTheme))
 {
 }
 
@@ -29,6 +30,7 @@ void AppNavigator::pushStateToActiveScreen()
 
 void AppNavigator::showMainScreen()
 {
+    activeScreen_ = ActiveScreen::Main;
     clearRoot();
     colorPickerScreen_.reset();
     wifiConfigScreen_.reset();
@@ -45,6 +47,7 @@ void AppNavigator::showMainScreen()
 
 void AppNavigator::showColorPickerScreen()
 {
+    activeScreen_ = ActiveScreen::ColorPicker;
     clearRoot();
     mainScreen_.reset();
     wifiConfigScreen_.reset();
@@ -58,6 +61,7 @@ void AppNavigator::showColorPickerScreen()
 
 void AppNavigator::showNetworkInfoScreen()
 {
+    activeScreen_ = ActiveScreen::NetworkInfo;
     clearRoot();
     mainScreen_.reset();
     colorPickerScreen_.reset();
@@ -74,6 +78,7 @@ void AppNavigator::showNetworkInfoScreen()
 
 void AppNavigator::showWifiConfigScreen()
 {
+    activeScreen_ = ActiveScreen::WifiConfig;
     clearRoot();
     mainScreen_.reset();
     colorPickerScreen_.reset();
@@ -91,6 +96,7 @@ void AppNavigator::closeWifiConfigScreen()
 
 void AppNavigator::showThemePreviewScreen()
 {
+    activeScreen_ = ActiveScreen::ThemePreview;
     clearRoot();
     mainScreen_.reset();
     colorPickerScreen_.reset();
@@ -105,6 +111,7 @@ void AppNavigator::showThemePreviewScreen()
 
 void AppNavigator::showMenuTestScreen()
 {
+    activeScreen_ = ActiveScreen::MenuTest;
     clearRoot();
     mainScreen_.reset();
     colorPickerScreen_.reset();
@@ -135,6 +142,50 @@ void AppNavigator::setOnNetworkInfoScreenChanged(
     std::function<void(screens::NetworkInfoScreen*)> cb)
 {
     onNetworkInfoScreenChanged_ = std::move(cb);
+}
+
+void AppNavigator::setTheme(const core::UiTheme& theme)
+{
+    factory_.setTheme(theme);
+
+    // When theme changes are triggered from ThemePreviewScreen itself,
+    // remounting here would destroy the current screen while its event
+    // callback is still running. Apply the visual update in-place instead.
+    if (activeScreen_ == ActiveScreen::ThemePreview) {
+        if (themePreviewScreen_) {
+            themePreviewScreen_->applyLiveTheme(theme);
+        }
+        return;
+    }
+
+    remountActiveScreen();
+}
+
+void AppNavigator::remountActiveScreen()
+{
+    switch (activeScreen_) {
+    case ActiveScreen::Main:
+        showMainScreen();
+        break;
+    case ActiveScreen::ColorPicker:
+        showColorPickerScreen();
+        break;
+    case ActiveScreen::NetworkInfo:
+        showNetworkInfoScreen();
+        break;
+    case ActiveScreen::WifiConfig:
+        showWifiConfigScreen();
+        break;
+    case ActiveScreen::ThemePreview:
+        showThemePreviewScreen();
+        break;
+    case ActiveScreen::MenuTest:
+        showMenuTestScreen();
+        break;
+    case ActiveScreen::None:
+    default:
+        break;
+    }
 }
 
 } // namespace lightinator::ui

@@ -19,10 +19,12 @@ public:
     explicit ThemePreviewScreen(const core::UiTheme& theme);
 
     void mount(lv_obj_t* parent) override;
+    void applyLiveTheme(const core::UiTheme& theme);
 
     void setOnCloseRequested(std::function<void()> callback);
     void setOnSaveRequested(std::function<bool(const core::UiTheme&)> callback);
     void setOnThemeListRequested(std::function<std::vector<core::UiTheme>()> callback);
+    void setOnThemeApplyRequested(std::function<void(const core::UiTheme&)> callback);
 
 private:
     static void onSaveButtonEvent(lv_event_t* event);
@@ -30,7 +32,7 @@ private:
     static void onKeyboardEvent(lv_event_t* event);
     static void onColorInputChanged(lv_event_t* event);
     static void onColorFieldClicked(lv_event_t* event);
-    static void onFontSliderChanged(lv_event_t* event);
+    static void onFontDropdownChanged(lv_event_t* event);
     static void onSchemeDropdownChanged(lv_event_t* event);
     static void onColorPickerCancelEvent(lv_event_t* event);
 
@@ -53,6 +55,7 @@ private:
     std::function<void()> onCloseRequested_;
     std::function<bool(const core::UiTheme&)> onSaveRequested_;
     std::function<std::vector<core::UiTheme>()> onThemeListRequested_;
+    std::function<void(const core::UiTheme&)> onThemeApplyRequested_;
 
     std::vector<core::UiTheme> availableThemes_;
 
@@ -86,11 +89,11 @@ private:
     lv_obj_t* dangerBgSwatch_ = nullptr;
     lv_obj_t* dangerFgSwatch_ = nullptr;
 
-    lv_obj_t* headerSizeSlider_ = nullptr;
-    lv_obj_t* subheaderSizeSlider_ = nullptr;
-    lv_obj_t* contentHeaderSizeSlider_ = nullptr;
-    lv_obj_t* contentSubheaderSizeSlider_ = nullptr;
-    lv_obj_t* contentSizeSlider_ = nullptr;
+    lv_obj_t* headerFontDropdown_ = nullptr;
+    lv_obj_t* subheaderFontDropdown_ = nullptr;
+    lv_obj_t* contentHeaderFontDropdown_ = nullptr;
+    lv_obj_t* contentSubheaderFontDropdown_ = nullptr;
+    lv_obj_t* contentFontDropdown_ = nullptr;
 
     std::unique_ptr<DecoratedScreen> decorated_;
 };

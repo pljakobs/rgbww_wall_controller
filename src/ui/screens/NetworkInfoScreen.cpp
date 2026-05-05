@@ -26,7 +26,8 @@ void NetworkInfoScreen::mount(lv_obj_t* parent)
 
     bodyLayout_ = std::make_unique<lvgl::widget::Object>(decorated_->bodySlot());
     bodyLayout_->SetSize(lv_pct(100), lv_pct(100))
-        ->SetStyleBgOpa(LV_OPA_TRANSP, 0)
+        ->SetStyleBgColor(theme_.colors.contentBg, 0)
+        ->SetStyleBgOpa(LV_OPA_COVER, 0)
         ->SetStyleBorderWidth(0, 0)
         ->SetStylePadAll(0, 0)
         ->SetStylePadRow(14, 0)
@@ -41,11 +42,11 @@ void NetworkInfoScreen::mount(lv_obj_t* parent)
     neighboursList_ = std::make_unique<lvgl::widget::Object>(bodyLayout_->GetObj());
 
     const lv_color_t textColor = theme_.colors.contentFg;
-    connectedLabel_->SetStyleTextFont(theme_.fonts.subheader, 0)->SetStyleTextColor(textColor, 0);
-    ipLabel_->SetStyleTextFont(theme_.fonts.subheader, 0)->SetStyleTextColor(textColor, 0);
-    netmaskLabel_->SetStyleTextFont(theme_.fonts.subheader, 0)->SetStyleTextColor(textColor, 0);
-    gatewayLabel_->SetStyleTextFont(theme_.fonts.subheader, 0)->SetStyleTextColor(textColor, 0);
-    neighboursTitleLabel_->SetStyleTextFont(theme_.fonts.subheader, 0)->SetStyleTextColor(textColor, 0);
+    connectedLabel_->SetStyleTextFont(theme_.fonts.contentSubheader, 0)->SetStyleTextColor(textColor, 0);
+    ipLabel_->SetStyleTextFont(theme_.fonts.content, 0)->SetStyleTextColor(textColor, 0);
+    netmaskLabel_->SetStyleTextFont(theme_.fonts.content, 0)->SetStyleTextColor(textColor, 0);
+    gatewayLabel_->SetStyleTextFont(theme_.fonts.content, 0)->SetStyleTextColor(textColor, 0);
+    neighboursTitleLabel_->SetStyleTextFont(theme_.fonts.contentSubheader, 0)->SetStyleTextColor(textColor, 0);
 
     neighboursList_->SetWidth(lv_pct(100))
         ->SetStyleBgColor(theme_.colors.contentBg, 0)
@@ -59,6 +60,7 @@ void NetworkInfoScreen::mount(lv_obj_t* parent)
         ->SetFlexAlign(LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
     lv_obj_set_height(neighboursList_->GetObj(), 190);
     lv_obj_set_scroll_dir(neighboursList_->GetObj(), LV_DIR_VER);
+    lv_obj_clear_flag(neighboursList_->GetObj(), LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
 
     refreshLabels();
     refreshNeighbours();
@@ -107,7 +109,7 @@ void NetworkInfoScreen::refreshNeighbours()
 
     if(neighbours_.empty()) {
         lv_obj_t* row = lv_label_create(neighboursList_->GetObj());
-        lv_obj_set_style_text_font(row, theme_.fonts.subheader, 0);
+        lv_obj_set_style_text_font(row, theme_.fonts.content, 0);
         lv_obj_set_style_text_color(row, theme_.colors.buttonFg, 0);
         lv_label_set_text_static(row, "No visible neighbours");
         return;
@@ -116,7 +118,7 @@ void NetworkInfoScreen::refreshNeighbours()
     for(const auto& neighbour : neighbours_) {
         lv_obj_t* row = lv_label_create(neighboursList_->GetObj());
         lv_obj_set_width(row, lv_pct(100));
-        lv_obj_set_style_text_font(row, theme_.fonts.subheader, 0);
+        lv_obj_set_style_text_font(row, theme_.fonts.content, 0);
         lv_obj_set_style_text_color(row, theme_.colors.contentFg, 0);
 
         const String name = neighbour.name.length() > 0 ? neighbour.name : String("unnamed");

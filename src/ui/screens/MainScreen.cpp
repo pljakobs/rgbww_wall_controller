@@ -196,25 +196,37 @@ void MainScreen::showBurgerMenu()
 
     lv_obj_t* root = decorated_->root();
 
-    // Dimming dismiss layer under a left-side drawer.
+    // Full-screen transparent dismiss layer; drawer itself provides visual overlay.
     lv_obj_t* dismiss = lv_obj_create(root);
+    lv_obj_add_flag(dismiss, LV_OBJ_FLAG_FLOATING | LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(dismiss, LV_OBJ_FLAG_IGNORE_LAYOUT);
+    lv_obj_clear_flag(dismiss, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_pos(dismiss, 0, 0);
     lv_obj_set_size(dismiss, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_bg_color(dismiss, lv_color_black(), 0);
-    lv_obj_set_style_bg_opa(dismiss, LV_OPA_40, 0);
+    lv_obj_set_style_bg_opa(dismiss, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(dismiss, 0, 0);
     lv_obj_set_style_pad_all(dismiss, 0, 0);
-    lv_obj_add_flag(dismiss, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(dismiss, onMenuDismissEvent, LV_EVENT_CLICKED, this);
 
-    // Left drawer panel occupying half the screen.
+    // Left drawer panel occupying half the screen below the header.
     lv_obj_t* panel = lv_obj_create(dismiss);
     burgerMenuPanel_ = panel;
-    lv_coord_t drawerWidth = lv_obj_get_width(root) / 2;
+    lv_obj_add_flag(panel, LV_OBJ_FLAG_FLOATING | LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(panel, LV_OBJ_FLAG_IGNORE_LAYOUT);
+    lv_obj_clear_flag(panel, LV_OBJ_FLAG_SCROLLABLE);
+
+    const lv_coord_t rootPadTop = lv_obj_get_style_pad_top(root, LV_PART_MAIN);
+    const lv_coord_t top = rootPadTop + theme_.headerHeight;
+    lv_coord_t drawerWidth = (lv_obj_get_width(root) * 50) / 100;
     if (drawerWidth < 180) {
         drawerWidth = 180;
     }
-    lv_obj_set_size(panel, drawerWidth, lv_pct(100));
-    lv_obj_set_pos(panel, 0, 0);
+    lv_coord_t drawerHeight = lv_obj_get_height(root) - top;
+    if (drawerHeight < 80) {
+        drawerHeight = 80;
+    }
+    lv_obj_set_size(panel, drawerWidth, drawerHeight);
+    lv_obj_set_pos(panel, 0, top);
     lv_obj_set_style_bg_color(panel, theme_.colors.buttonBg, 0);
     lv_obj_set_style_bg_opa(panel, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(panel, 0, 0);
@@ -236,7 +248,8 @@ void MainScreen::showBurgerMenu()
     lv_obj_set_style_border_width(list, 0, 0);
     lv_obj_set_style_pad_all(list, 0, 0);
     lv_obj_set_style_pad_row(list, 0, 0);
-    lv_obj_clear_flag(list, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scroll_dir(list, LV_DIR_VER);
+    lv_obj_clear_flag(list, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
 
     auto styleListButton = [this](lv_obj_t* btn) {
         lv_obj_set_width(btn, lv_pct(100));

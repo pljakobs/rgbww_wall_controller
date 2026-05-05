@@ -29,7 +29,10 @@ class ScreenFactory {
 public:
     ScreenFactory(UiStateStore& state, core::HsvColor& currentColor, const core::UiTheme& theme,
                   std::function<bool(const core::UiTheme&)> onSaveTheme,
-                  std::function<std::vector<core::UiTheme>()> onThemeList);
+                  std::function<std::vector<core::UiTheme>()> onThemeList,
+                  std::function<void(const core::UiTheme&)> onApplyTheme);
+
+    void setTheme(const core::UiTheme& theme);
 
     std::unique_ptr<screens::MainScreen> createMainScreen(
         std::function<void()> onOpenColorPicker,
@@ -56,6 +59,7 @@ private:
     core::UiTheme      theme_;
     std::function<bool(const core::UiTheme&)> onSaveTheme_;
     std::function<std::vector<core::UiTheme>()> onThemeList_;
+    std::function<void(const core::UiTheme&)> onApplyTheme_;
 };
 
 } // namespace lightinator::ui

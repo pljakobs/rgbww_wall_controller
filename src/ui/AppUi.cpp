@@ -33,7 +33,8 @@ bool AppUi::init()
 
     currentColor_ = core::clampHsv(currentColor_);
     navigator_ = std::make_unique<AppNavigator>(
-        root_, state_, currentColor_, theme_, onThemeSaveRequested_, onThemeListRequested_);
+        root_, state_, currentColor_, theme_, onThemeSaveRequested_, onThemeListRequested_,
+        [this](const core::UiTheme& theme) { setTheme(theme); });
     navigator_->setOnNetworkInfoScreenChanged(
         [this](screens::NetworkInfoScreen* screen) {
             networkInfoPresenter_.bind(screen);
@@ -53,6 +54,9 @@ void AppUi::setTheme(const core::UiTheme& theme)
     theme_ = theme;
     if (screen_ != nullptr) {
         lv_obj_set_style_bg_color(screen_, theme_.colors.contentBg, 0);
+    }
+    if (initialized_ && navigator_) {
+        navigator_->setTheme(theme_);
     }
 }
 

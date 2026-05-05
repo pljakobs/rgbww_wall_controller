@@ -41,8 +41,9 @@ void DecoratedScreen::mount(lv_obj_t* parent)
         lv_obj_set_size(burger, 44, 44);
         lv_obj_set_flex_grow(burger, 0);
         lv_obj_set_style_radius(burger, 8, 0);
-        lv_obj_set_style_bg_color(burger, lv_color_hex(0x224F77), 0);
+        lv_obj_set_style_bg_opa(burger, LV_OPA_TRANSP, 0);
         lv_obj_set_style_border_width(burger, 0, 0);
+        lv_obj_set_style_shadow_width(burger, 0, 0);
         lv_obj_set_style_pad_all(burger, 0, 0);
         lv_obj_add_event_cb(burger, onBurgerButtonEvent, LV_EVENT_CLICKED, this);
 
@@ -87,8 +88,9 @@ void DecoratedScreen::mount(lv_obj_t* parent)
         lv_obj_set_size(close, 54, 44);
         lv_obj_set_flex_grow(close, 0);
         lv_obj_set_style_radius(close, 10, 0);
-        lv_obj_set_style_bg_color(close, lv_color_hex(0x224F77), 0);
+        lv_obj_set_style_bg_opa(close, LV_OPA_TRANSP, 0);
         lv_obj_set_style_border_width(close, 0, 0);
+        lv_obj_set_style_shadow_width(close, 0, 0);
         lv_obj_add_event_cb(close, onCloseButtonEvent, LV_EVENT_CLICKED, this);
 
         auto* closeLabel = lv_label_create(close);
@@ -114,6 +116,41 @@ void DecoratedScreen::setBody(std::unique_ptr<core::Widget> widget)
     bodyWidget_ = std::move(widget);
     if (bodyObj_ && bodyWidget_) {
         bodyWidget_->mount(bodyObj_->GetObj());
+    }
+}
+
+void DecoratedScreen::applyHeaderTheme(const HeaderOptions& options, lv_color_t fgColor)
+{
+    options_ = options;
+
+    if (!headerObj_) {
+        return;
+    }
+
+    lv_obj_t* header = headerObj_->GetObj();
+    lv_obj_set_height(header, options_.height);
+    lv_obj_set_style_bg_color(header, options_.color, 0);
+
+    if (titleLabel_) {
+        lv_obj_t* title = titleLabel_->GetObj();
+        lv_obj_set_style_text_font(title, options_.font, 0);
+        lv_obj_set_style_text_color(title, fgColor, 0);
+    }
+
+    if (statusIconLabel_) {
+        lv_obj_set_style_text_color(statusIconLabel_->GetObj(), fgColor, 0);
+    }
+
+    if (burgerButton_) {
+        if (lv_obj_t* label = lv_obj_get_child(burgerButton_->GetObj(), 0)) {
+            lv_obj_set_style_text_color(label, fgColor, 0);
+        }
+    }
+
+    if (closeButton_) {
+        if (lv_obj_t* label = lv_obj_get_child(closeButton_->GetObj(), 0)) {
+            lv_obj_set_style_text_color(label, fgColor, 0);
+        }
     }
 }
 

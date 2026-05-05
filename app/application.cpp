@@ -2,8 +2,10 @@
 #include <esp_log.h>
 
 #include <cctype>
+#include <algorithm>
 #include <cstdio>
 
+#include "builtin_themes.h"
 #include "ui/AppUi.h"
 #include "ui/core/UiTheme.h"
 #include "ui/WifiConfigFlow.h"
@@ -93,9 +95,7 @@ bool saveThemeSchema(UiTheme theme)
     if (theme.name.length() == 0) {
         return false;
     }
-    if (theme.id.length() == 0) {
-        theme.id = slugFromName(theme.name);
-    }
+    theme.id = slugFromName(theme.name);
 
     AppData::Root dataRoot(*s_data);
     if (auto update = dataRoot.update()) {
@@ -147,12 +147,16 @@ bool saveThemeSchema(UiTheme theme)
 
 std::vector<UiTheme> loadThemeSchemas()
 {
-    std::vector<UiTheme> out;
+    // Start with built-in themes (flash JSON, always present).
+    std::vector<UiTheme> out = loadBuiltinThemes();
+
     if (!s_data) {
-        out.push_back(lightinator::ui::core::nordicDarkTheme());
         return out;
     }
 
+    // Overlay with user-edited themes from ConfigDB.
+    // A ConfigDB entry with a matching id replaces the built-in;
+    // entries with new ids are appended.
     AppData::Root dataRoot(*s_data);
     for (auto t : dataRoot.themes) {
         UiTheme theme = lightinator::ui::core::nordicDarkTheme();
@@ -174,12 +178,17 @@ std::vector<UiTheme> loadThemeSchemas()
         theme.fonts.contentHeader    = lightinator::ui::core::montserratFont(t.fonts.getContentHeader());
         theme.fonts.contentSubheader = lightinator::ui::core::montserratFont(t.fonts.getContentSubheader());
         theme.fonts.content          = lightinator::ui::core::montserratFont(t.fonts.getContent());
-        out.push_back(theme);
+
+        // Replace matching built-in, or append as a new user theme.
+        auto it = std::find_if(out.begin(), out.end(),
+            [&](const UiTheme& b) { return b.id == theme.id; });
+        if (it != out.end()) {
+            *it = theme;
+        } else {
+            out.push_back(theme);
+        }
     }
 
-    if (out.empty()) {
-        out.push_back(lightinator::ui::core::nordicDarkTheme());
-    }
     return out;
 }
 
@@ -205,29 +214,14 @@ void init()
         using namespace lightinator::ui::core;
         UiTheme theme = nordicDarkTheme();
         AppConfig::Root cfgRoot(*s_cfg);
-        AppData::Root dataRoot(*s_data);
         String activeId = cfgRoot.getActiveTheme();
-        for (auto t : dataRoot.themes) {
-            if (t.getId() == activeId) {
-                theme.id           = t.getId();
-                theme.name         = t.getName();
-                theme.mode         = (t.getMode() == 0) ? "light" : "dark";
-                theme.headerHeight = static_cast<lv_coord_t>(t.getHeaderHeight());
-                theme.colors.headerBg  = colorFromHexString(t.colors.getHeaderBg(),  theme.colors.headerBg);
-                theme.colors.headerFg  = colorFromHexString(t.colors.getHeaderFg(),  theme.colors.headerFg);
-                theme.colors.contentBg = colorFromHexString(t.colors.getContentBg(), theme.colors.contentBg);
-                theme.colors.contentFg = colorFromHexString(t.colors.getContentFg(), theme.colors.contentFg);
-                theme.colors.buttonBg  = colorFromHexString(t.colors.getButtonBg(),  theme.colors.buttonBg);
-                theme.colors.buttonFg  = colorFromHexString(t.colors.getButtonFg(),  theme.colors.buttonFg);
-                theme.colors.shadow    = colorFromHexString(t.colors.getShadow(),    theme.colors.shadow);
-                theme.colors.dangerBg  = colorFromHexString(t.colors.getDangerBg(),  theme.colors.dangerBg);
-                theme.colors.dangerFg  = colorFromHexString(t.colors.getDangerFg(),  theme.colors.dangerFg);
-                theme.fonts.header           = montserratFont(t.fonts.getHeader());
-                theme.fonts.subheader        = montserratFont(t.fonts.getSubheader());
-                theme.fonts.contentHeader    = montserratFont(t.fonts.getContentHeader());
-                theme.fonts.contentSubheader = montserratFont(t.fonts.getContentSubheader());
-                theme.fonts.content          = montserratFont(t.fonts.getContent());
-                break;
+        if (activeId.length() != 0) {
+            const auto allThemes = loadThemeSchemas();
+            for (const auto& candidate : allThemes) {
+                if (candidate.id == activeId) {
+                    theme = candidate;
+                    break;
+                }
             }
         }
         s_ui.setTheme(theme);

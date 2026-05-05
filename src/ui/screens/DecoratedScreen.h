@@ -27,6 +27,7 @@ public:
 
     void mount(lv_obj_t* parent) override;
     void setBody(std::unique_ptr<core::Widget> widget) override;
+    void applyHeaderTheme(const HeaderOptions& options, lv_color_t fgColor);
 
     lv_obj_t* bodySlot() const;
     void setHeaderStatusIcon(const char* iconText, bool visible);

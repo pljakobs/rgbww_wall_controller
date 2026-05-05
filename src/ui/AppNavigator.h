@@ -31,7 +31,8 @@ public:
     AppNavigator(lv_obj_t* root, UiStateStore& state, core::HsvColor& currentColor,
                  const core::UiTheme& theme,
                  std::function<bool(const core::UiTheme&)> onSaveTheme,
-                 std::function<std::vector<core::UiTheme>()> onThemeList);
+                 std::function<std::vector<core::UiTheme>()> onThemeList,
+                 std::function<void(const core::UiTheme&)> onApplyTheme);
 
     void showMainScreen();
     void showColorPickerScreen();
@@ -40,6 +41,7 @@ public:
     void closeWifiConfigScreen();
     void showThemePreviewScreen();
     void showMenuTestScreen();
+    void setTheme(const core::UiTheme& theme);
 
     screens::WifiConfigScreen*   wifiConfigScreen();
     screens::MainScreen*         mainScreen();
@@ -54,7 +56,18 @@ public:
         std::function<void(screens::NetworkInfoScreen*)> cb);
 
 private:
+    enum class ActiveScreen {
+        None,
+        Main,
+        ColorPicker,
+        NetworkInfo,
+        WifiConfig,
+        ThemePreview,
+        MenuTest,
+    };
+
     void clearRoot();
+    void remountActiveScreen();
 
     lv_obj_t*        root_;
     ScreenFactory    factory_;
@@ -67,6 +80,7 @@ private:
     std::unique_ptr<screens::MenuTestScreen>   menuTestScreen_;
 
     std::function<void(screens::NetworkInfoScreen*)> onNetworkInfoScreenChanged_;
+    ActiveScreen activeScreen_ = ActiveScreen::None;
 };
 
 } // namespace lightinator::ui

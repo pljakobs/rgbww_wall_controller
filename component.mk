@@ -30,7 +30,7 @@ LVGL_RUNTIME_ADAPTER_DIR := $(if $(wildcard $(CURDIR)/Components/lvgl_runtime_ad
 export COMPONENT_SEARCH_DIRS += \
     $(LVGL_RUNTIME_ADAPTER_DIR)
 
-COMPONENT_DEPENDS := esp_lcd_adapter touch_driver_gt911 lvglCpp ConfigDB MDNS LittleFS
+COMPONENT_DEPENDS := esp_lcd_adapter touch_driver_gt911 lvglCpp ConfigDB ArduinoJson6 MDNS LittleFS
 
 ## esp_lcd and esp_psram are added to the Sming SDK_COMPONENTS list in
 ## /opt/sming/Sming/Arch/Esp32/Components/esp32/component.mk so they are

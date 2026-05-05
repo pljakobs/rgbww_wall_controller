@@ -29,7 +29,8 @@ private:
     static void onOkButtonEvent(lv_event_t* event);
 
     void updateLayout();
-    void refreshGradient();
+    void refreshGradient(uint8_t cellSize = 1);
+    void refreshHueStrip();
     void refreshMarker();
     void setFromCanvasPoint(lv_coord_t x, lv_coord_t y);
     void emitChanged();
@@ -40,13 +41,18 @@ private:
     std::function<void(const core::HsvColor&)> onColorCommitted_;
 
     std::unique_ptr<lvgl::widget::Object> rootObj_;
+    std::unique_ptr<lvgl::widget::Object> rightCol_;
+    std::unique_ptr<lvgl::widget::Object> hueArea_;
     std::unique_ptr<lvgl::widget::Canvas> svCanvas_;
+    std::unique_ptr<lvgl::widget::Canvas> hueStripCanvas_;
     std::unique_ptr<lvgl::widget::Canvas> markerCanvas_;
     std::unique_ptr<lvgl::widget::Slider> hueSlider_;
     std::unique_ptr<lvgl::widget::Button> okButton_;
 
     std::vector<lv_color_t> svBuffer_;
+    std::vector<lv_color_t> hueStripBuffer_;
     lv_coord_t svSize_ = 0;
+    lv_coord_t hueStripHeight_ = 0;
     lv_coord_t markerX_ = 0;
     lv_coord_t markerY_ = 0;
     bool markerFromTouch_ = false;

@@ -6,13 +6,20 @@ namespace lightinator::ui {
 ScreenFactory::ScreenFactory(UiStateStore& state, core::HsvColor& currentColor,
                              const core::UiTheme& theme,
                                                          std::function<bool(const core::UiTheme&)> onSaveTheme,
-                                                         std::function<std::vector<core::UiTheme>()> onThemeList)
+                                                         std::function<std::vector<core::UiTheme>()> onThemeList,
+                                                         std::function<void(const core::UiTheme&)> onApplyTheme)
         : state_(state),
             currentColor_(currentColor),
             theme_(theme),
             onSaveTheme_(std::move(onSaveTheme)),
-            onThemeList_(std::move(onThemeList))
+            onThemeList_(std::move(onThemeList)),
+            onApplyTheme_(std::move(onApplyTheme))
 {
+}
+
+void ScreenFactory::setTheme(const core::UiTheme& theme)
+{
+    theme_ = theme;
 }
 
 std::unique_ptr<screens::MainScreen> ScreenFactory::createMainScreen(
@@ -68,6 +75,7 @@ std::unique_ptr<screens::ThemePreviewScreen> ScreenFactory::createThemePreviewSc
     screen->setOnCloseRequested(std::move(onClose));
     screen->setOnSaveRequested(onSaveTheme_);
     screen->setOnThemeListRequested(onThemeList_);
+    screen->setOnThemeApplyRequested(onApplyTheme_);
     return screen;
 }
 

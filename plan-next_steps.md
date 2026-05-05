@@ -185,3 +185,57 @@ Definition of done for architecture stabilization
 2. AppUi no longer owns navigation, business state, or service callback wiring.
 3. Network Info screen update path is event-driven + throttled with low idle CPU.
 4. At least one full screen flow is presenter-driven end-to-end (Network Info recommended first).
+
+
+Issues:
+- [x] Menu
+  - [x] the hamburger menu sits in a button with shadow - the button should be opaque on the background (the main screen header in this case) like the wifi icon is
+  - [x] the menu, while only using half the screen width, backs out the right half of the screen, too, it should be a pure overlay
+  - [x] the menu should be 75% opaque
+  - [x] the menu should sit right underneath the header, currently it has about 10px top gutter
+  - [x] the menu seems longer than the screen and makes the screen show a scroll bar - if the menu content is longer than the screen, the menu should have a scroller
+- [x] Network Info screen
+  - [x] the close button sits in a button with shadow - same as with the hamburger menu button
+  - [x] the content text does not use the theme settings
+- [x] color picker
+  - [x] the hue slider is difficult to use because the slider button is too small and too close to the active area of the s/v square. move it to the right of the square and make the slider button 200%
+  - [x] maybe the okay button could also move to the right side, giving more space for the s/v square
+  - [x] same close button isuse
+- [x] Theme viewer
+  - [x] saving the schema (it shoudl be called "save theme") doesn't seem to add a new theme but overwrites it
+    - [x] saving a theme with the same name should overwrite an existing theme
+    - [x] saving a theme with a new name should create a new one
+    - [x] selecting a theme should immediately apply the theme if possible
+    - [x] the font sliders are really hard to hit and move, and the values are not sensible anyway, as we only have a limited number of fonts. the different fonts should instead have a drop down that allows the user to select from the installed fonts
+- color picker
+  - [x] color picker was now too large, Ive reduced it from 96 to 64, but the slide strip should also be narrower
+  - [x] in the color picker, the ok button should sit below the color picker hue slider, not to the right of it
+  - [x] in the theme editor, the color picker does not fit the space it's given
+- overal performance
+  - [x] specifically the theme editor feels exessively slow
+
+
+- enhancements
+  - create a set of pre-defined themes based on https://vuetifyjs.com/en/styles/colors/#material-colors - name being the base color name
+    - theme name is the base color name
+    - header Bg is -darken-3
+    - header Fg is -lighten-5
+    - content Bg is base hue with s=10 and v=10
+    - content Fg is -lighten-4
+    - button Bg is -accent-2
+    - button Fg is -lighten-4
+    - shadow is is darken-4 with v=25
+    - danger Bg is -accent-3
+    - danger Fg is -accent-1
+
+Issues:
+- color picker:
+  - [x] can we find a speed vs size balance for the S/V selector. I suggest a graded shading model perhaps? right after a hue update even, the square is re-drawn in 8x8 cells, if the slider has not been mvoed for 50ms, it's redrawn as 1x1. Would that speed up things?
+  - [x] the square should really use all the available space if possible (different for color selector screen and theme editor color selector pop up)
+  - [x] the slider button is still very large, maybe 48px?
+  - [x] can we make the slider strip show the hue range?
+- themes
+  - [x] the theme selector seems not to show the in-flash themes
+  - [x] scrolling the themes popup is next to impossible
+  - [x] selecting a theme is difficult, too
+  - [x] once a theme is selected, it's not applied immediately 

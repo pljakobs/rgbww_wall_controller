@@ -49,6 +49,51 @@ int fontSizeFromPtr(const lv_font_t* font)
     return 16;
 }
 
+struct FontChoice {
+    int size;
+    const lv_font_t* font;
+    const char* label;
+};
+
+constexpr FontChoice kFontChoices[] = {
+    {14, &lv_font_montserrat_14, "Montserrat 14"},
+    {16, &lv_font_montserrat_16, "Montserrat 16"},
+    {22, &lv_font_montserrat_22, "Montserrat 22"},
+    {24, &lv_font_montserrat_24, "Montserrat 24"},
+    {34, &lv_font_montserrat_34, "Montserrat 34"},
+    {36, &lv_font_montserrat_36, "Montserrat 36"},
+};
+
+uint16_t fontChoiceIndexFromPtr(const lv_font_t* font)
+{
+    for (uint16_t i = 0; i < (sizeof(kFontChoices) / sizeof(kFontChoices[0])); ++i) {
+        if (kFontChoices[i].font == font) {
+            return i;
+        }
+    }
+    return 1;
+}
+
+const lv_font_t* fontChoiceFromIndex(uint16_t index)
+{
+    if (index >= (sizeof(kFontChoices) / sizeof(kFontChoices[0]))) {
+        index = 1;
+    }
+    return kFontChoices[index].font;
+}
+
+String fontChoiceOptions()
+{
+    String options;
+    for (size_t i = 0; i < (sizeof(kFontChoices) / sizeof(kFontChoices[0])); ++i) {
+        if (i != 0) {
+            options += "\n";
+        }
+        options += kFontChoices[i].label;
+    }
+    return options;
+}
+
 lightinator::ui::core::HsvColor toCoreHsv(lv_color_t color)
 {
     const lv_color_hsv_t hsv = lv_color_to_hsv(color);
@@ -76,6 +121,25 @@ ThemePreviewScreen::ThemePreviewScreen(const core::UiTheme& theme)
 {
 }
 
+void ThemePreviewScreen::applyLiveTheme(const core::UiTheme& theme)
+{
+    theme_ = theme;
+
+    if (decorated_) {
+        HeaderOptions header = {};
+        header.text      = "Theme Editor";
+        header.showClose = true;
+        header.height    = theme_.headerHeight;
+        header.color     = theme_.colors.headerBg;
+        header.font      = theme_.fonts.header;
+        decorated_->applyHeaderTheme(header, theme_.colors.headerFg);
+    }
+
+    if (statusLabel_) {
+        lv_obj_set_style_text_color(statusLabel_, theme_.colors.contentFg, 0);
+    }
+}
+
 void ThemePreviewScreen::setOnCloseRequested(std::function<void()> callback)
 {
     onCloseRequested_ = std::move(callback);
@@ -89,6 +153,11 @@ void ThemePreviewScreen::setOnSaveRequested(std::function<bool(const core::UiThe
 void ThemePreviewScreen::setOnThemeListRequested(std::function<std::vector<core::UiTheme>()> callback)
 {
     onThemeListRequested_ = std::move(callback);
+}
+
+void ThemePreviewScreen::setOnThemeApplyRequested(std::function<void(const core::UiTheme&)> callback)
+{
+    onThemeApplyRequested_ = std::move(callback);
 }
 
 void ThemePreviewScreen::mount(lv_obj_t* parent)
@@ -155,13 +224,13 @@ void ThemePreviewScreen::mount(lv_obj_t* parent)
     lv_obj_set_style_border_width(saveButton, 0, 0);
     lv_obj_add_event_cb(saveButton, onSaveButtonEvent, LV_EVENT_CLICKED, this);
     lv_obj_t* saveLabel = lv_label_create(saveButton);
-    lv_label_set_text_static(saveLabel, "Save schema");
+    lv_label_set_text_static(saveLabel, "Save theme");
     lv_obj_set_style_text_font(saveLabel, theme_.fonts.contentSubheader, 0);
     lv_obj_set_style_text_color(saveLabel, theme_.colors.buttonFg, 0);
     lv_obj_center(saveLabel);
 
     statusLabel_ = lv_label_create(layout);
-    lv_label_set_text_static(statusLabel_, "Edit and save to app-data");
+    lv_label_set_text_static(statusLabel_, "Edit and save theme");
     lv_obj_set_style_text_font(statusLabel_, theme_.fonts.content, 0);
     lv_obj_set_style_text_color(statusLabel_, theme_.colors.contentFg, 0);
     lv_obj_set_style_pad_left(statusLabel_, 10, 0);
@@ -180,17 +249,20 @@ void ThemePreviewScreen::mount(lv_obj_t* parent)
     lv_obj_set_flex_align(selectorRow, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
     lv_obj_t* selectorLabel = lv_label_create(selectorRow);
-    lv_label_set_text_static(selectorLabel, "Load scheme:");
+    lv_label_set_text_static(selectorLabel, "Load theme:");
     lv_obj_set_style_text_font(selectorLabel, theme_.fonts.content, 0);
     lv_obj_set_style_text_color(selectorLabel, theme_.colors.contentFg, 0);
 
     schemeDropdown_ = lv_dropdown_create(selectorRow);
-    lv_obj_set_height(schemeDropdown_, 44);
+    lv_obj_set_height(schemeDropdown_, 52);
     lv_obj_set_flex_grow(schemeDropdown_, 1);
-    lv_obj_set_style_text_font(schemeDropdown_, theme_.fonts.content, 0);
+    lv_obj_set_style_text_font(schemeDropdown_, &lv_font_montserrat_16, LV_PART_MAIN);
+    lv_obj_set_style_text_font(schemeDropdown_, &lv_font_montserrat_16, LV_PART_SELECTED);
     lv_obj_set_style_text_color(schemeDropdown_, theme_.colors.contentFg, 0);
     lv_obj_set_style_bg_color(schemeDropdown_, theme_.colors.contentBg, 0);
     lv_obj_set_style_border_color(schemeDropdown_, theme_.colors.shadow, 0);
+    lv_dropdown_set_dir(schemeDropdown_, LV_DIR_BOTTOM);
+    lv_obj_set_style_pad_ver(schemeDropdown_, 10, LV_PART_MAIN);
 
     if (onThemeListRequested_) {
         availableThemes_ = onThemeListRequested_();
@@ -215,6 +287,16 @@ void ThemePreviewScreen::mount(lv_obj_t* parent)
     lv_dropdown_set_options(schemeDropdown_, options.c_str());
     lv_dropdown_set_selected(schemeDropdown_, static_cast<uint16_t>(selectedIndex));
     lv_obj_add_event_cb(schemeDropdown_, onSchemeDropdownChanged, LV_EVENT_VALUE_CHANGED, this);
+
+    if (lv_obj_t* list = lv_dropdown_get_list(schemeDropdown_)) {
+        lv_obj_set_style_max_height(list, 260, 0);
+        lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_ACTIVE);
+        lv_obj_clear_flag(list, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
+        lv_obj_set_style_text_font(list, &lv_font_montserrat_16, 0);
+        lv_obj_set_style_pad_row(list, 8, 0);
+        lv_obj_set_style_bg_color(list, theme_.colors.contentBg, 0);
+        lv_obj_set_style_text_color(list, theme_.colors.contentFg, 0);
+    }
 
     // Tabview filling the entire body slot
     lv_obj_t* tabview = lv_tabview_create(layout, LV_DIR_TOP, 48);
@@ -276,11 +358,11 @@ void ThemePreviewScreen::buildFontsTab(lv_obj_t* tab)
     lv_obj_set_flex_flow(tab, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(tab, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
 
-    addFontRow(tab, "header", fontSizeFromPtr(theme_.fonts.header), &headerSizeSlider_);
-    addFontRow(tab, "subheader", fontSizeFromPtr(theme_.fonts.subheader), &subheaderSizeSlider_);
-    addFontRow(tab, "contentHeader", fontSizeFromPtr(theme_.fonts.contentHeader), &contentHeaderSizeSlider_);
-    addFontRow(tab, "contentSubheader", fontSizeFromPtr(theme_.fonts.contentSubheader), &contentSubheaderSizeSlider_);
-    addFontRow(tab, "content", fontSizeFromPtr(theme_.fonts.content), &contentSizeSlider_);
+    addFontRow(tab, "header", fontSizeFromPtr(theme_.fonts.header), &headerFontDropdown_);
+    addFontRow(tab, "subheader", fontSizeFromPtr(theme_.fonts.subheader), &subheaderFontDropdown_);
+    addFontRow(tab, "contentHeader", fontSizeFromPtr(theme_.fonts.contentHeader), &contentHeaderFontDropdown_);
+    addFontRow(tab, "contentSubheader", fontSizeFromPtr(theme_.fonts.contentSubheader), &contentSubheaderFontDropdown_);
+    addFontRow(tab, "content", fontSizeFromPtr(theme_.fonts.content), &contentFontDropdown_);
 }
 
 void ThemePreviewScreen::addColorRow(lv_obj_t* parent, const char* name, lv_color_t color,
@@ -353,22 +435,18 @@ void ThemePreviewScreen::addFontRow(lv_obj_t* parent, const char* name, int init
     lv_obj_set_style_text_font(nameLabel, theme_.fonts.content, 0);
     lv_obj_set_style_text_color(nameLabel, theme_.colors.contentFg, 0);
 
-    lv_obj_t* slider = lv_slider_create(row);
-    lv_obj_set_size(slider, 190, 10);
-    lv_slider_set_range(slider, 10, 48);
-    lv_slider_set_value(slider, initialSize, LV_ANIM_OFF);
-    lv_obj_set_style_bg_color(slider, theme_.colors.shadow, LV_PART_MAIN);
-    lv_obj_set_style_bg_color(slider, theme_.colors.buttonBg, LV_PART_INDICATOR);
-    lv_obj_set_style_bg_color(slider, theme_.colors.buttonFg, LV_PART_KNOB);
-
-    lv_obj_t* valueLabel = lv_label_create(row);
-    lv_label_set_text_fmt(valueLabel, "%d", initialSize);
-    lv_obj_set_style_text_font(valueLabel, theme_.fonts.content, 0);
-    lv_obj_set_style_text_color(valueLabel, theme_.colors.contentFg, 0);
-    lv_obj_add_event_cb(slider, onFontSliderChanged, LV_EVENT_VALUE_CHANGED, valueLabel);
+    lv_obj_t* dropdown = lv_dropdown_create(row);
+    lv_obj_set_size(dropdown, 220, 42);
+    lv_obj_set_style_text_font(dropdown, theme_.fonts.content, 0);
+    lv_obj_set_style_text_color(dropdown, theme_.colors.contentFg, 0);
+    lv_obj_set_style_bg_color(dropdown, theme_.colors.contentBg, 0);
+    lv_obj_set_style_border_color(dropdown, theme_.colors.shadow, 0);
+    lv_dropdown_set_options(dropdown, fontChoiceOptions().c_str());
+    lv_dropdown_set_selected(dropdown, fontChoiceIndexFromPtr(core::montserratFont(initialSize)));
+    lv_obj_add_event_cb(dropdown, onFontDropdownChanged, LV_EVENT_VALUE_CHANGED, this);
 
     if (sliderOut) {
-        *sliderOut = slider;
+        *sliderOut = dropdown;
     }
 }
 
@@ -399,8 +477,11 @@ void ThemePreviewScreen::onSaveButtonEvent(lv_event_t* event)
     if (self->onSaveRequested_(updatedTheme)) {
         self->theme_ = updatedTheme;
         if (self->statusLabel_) {
-            lv_label_set_text_static(self->statusLabel_, "Schema saved to app-data");
+            lv_label_set_text_static(self->statusLabel_, "Theme saved to app-data");
             lv_obj_set_style_text_color(self->statusLabel_, self->theme_.colors.contentFg, 0);
+        }
+        if (self->onThemeApplyRequested_) {
+            self->onThemeApplyRequested_(self->theme_);
         }
         self->hideKeyboard();
     } else if (self->statusLabel_) {
@@ -413,6 +494,11 @@ void ThemePreviewScreen::onTextAreaEvent(lv_event_t* event)
 {
     auto* self = static_cast<ThemePreviewScreen*>(lv_event_get_user_data(event));
     if (self == nullptr || self->keyboard_ == nullptr) {
+        return;
+    }
+
+    if (!lv_obj_is_valid(self->keyboard_)) {
+        self->keyboard_ = nullptr;
         return;
     }
 
@@ -488,14 +574,17 @@ void ThemePreviewScreen::onColorFieldClicked(lv_event_t* event)
     self->showColorPickerForField(field, swatch);
 }
 
-void ThemePreviewScreen::onFontSliderChanged(lv_event_t* event)
+void ThemePreviewScreen::onFontDropdownChanged(lv_event_t* event)
 {
-    auto* valueLabel = static_cast<lv_obj_t*>(lv_event_get_user_data(event));
-    if (valueLabel == nullptr) {
+    auto* self = static_cast<ThemePreviewScreen*>(lv_event_get_user_data(event));
+    if (self == nullptr) {
         return;
     }
-    lv_obj_t* slider = lv_event_get_target(event);
-    lv_label_set_text_fmt(valueLabel, "%ld", lv_slider_get_value(slider));
+
+    core::UiTheme previewTheme;
+    if (self->collectThemeFromInputs(previewTheme) && self->onThemeApplyRequested_) {
+        self->onThemeApplyRequested_(previewTheme);
+    }
 }
 
 void ThemePreviewScreen::onSchemeDropdownChanged(lv_event_t* event)
@@ -505,17 +594,24 @@ void ThemePreviewScreen::onSchemeDropdownChanged(lv_event_t* event)
         return;
     }
 
-    lv_obj_t* dropdown = lv_event_get_target(event);
+    lv_obj_t* dropdown = self->schemeDropdown_;
+    if (dropdown == nullptr) {
+        return;
+    }
     const uint16_t selectedIndex = lv_dropdown_get_selected(dropdown);
     if (selectedIndex >= self->availableThemes_.size()) {
         return;
     }
 
     self->theme_ = self->availableThemes_[selectedIndex];
+    self->applyLiveTheme(self->theme_);
     self->applyThemeToInputs(self->theme_);
+    if (self->onThemeApplyRequested_) {
+        self->onThemeApplyRequested_(self->theme_);
+    }
     self->hideKeyboard();
     if (self->statusLabel_) {
-        lv_label_set_text_fmt(self->statusLabel_, "Loaded schema: %s", self->theme_.name.c_str());
+        lv_label_set_text_fmt(self->statusLabel_, "Loaded theme: %s", self->theme_.name.c_str());
         lv_obj_set_style_text_color(self->statusLabel_, self->theme_.colors.contentFg, 0);
     }
 }
@@ -539,6 +635,12 @@ void ThemePreviewScreen::hideKeyboard()
     if (keyboard_ == nullptr) {
         return;
     }
+
+    if (!lv_obj_is_valid(keyboard_)) {
+        keyboard_ = nullptr;
+        return;
+    }
+
     lv_keyboard_set_textarea(keyboard_, nullptr);
     lv_obj_add_flag(keyboard_, LV_OBJ_FLAG_HIDDEN);
 }
@@ -565,7 +667,7 @@ void ThemePreviewScreen::showColorPickerForField(lv_obj_t* field, lv_obj_t* swat
     lv_obj_set_style_pad_all(colorPickerOverlay_, 0, 0);
 
     lv_obj_t* panel = lv_obj_create(colorPickerOverlay_);
-    lv_obj_set_size(panel, 320, 430);
+    lv_obj_set_size(panel, 290, 320);
     lv_obj_center(panel);
     lv_obj_set_style_bg_color(panel, theme_.colors.contentBg, 0);
     lv_obj_set_style_bg_opa(panel, LV_OPA_COVER, 0);
@@ -706,17 +808,21 @@ bool ThemePreviewScreen::collectThemeFromInputs(core::UiTheme& outTheme) const
         *entry.out = parsed;
     }
 
-    if (headerSizeSlider_ == nullptr || subheaderSizeSlider_ == nullptr ||
-        contentHeaderSizeSlider_ == nullptr || contentSubheaderSizeSlider_ == nullptr ||
-        contentSizeSlider_ == nullptr) {
+    if (headerFontDropdown_ == nullptr || subheaderFontDropdown_ == nullptr ||
+        contentHeaderFontDropdown_ == nullptr || contentSubheaderFontDropdown_ == nullptr ||
+        contentFontDropdown_ == nullptr) {
         return false;
     }
 
-    outTheme.fonts.header = core::montserratFont(lv_slider_get_value(headerSizeSlider_));
-    outTheme.fonts.subheader = core::montserratFont(lv_slider_get_value(subheaderSizeSlider_));
-    outTheme.fonts.contentHeader = core::montserratFont(lv_slider_get_value(contentHeaderSizeSlider_));
-    outTheme.fonts.contentSubheader = core::montserratFont(lv_slider_get_value(contentSubheaderSizeSlider_));
-    outTheme.fonts.content = core::montserratFont(lv_slider_get_value(contentSizeSlider_));
+    outTheme.fonts.header = fontChoiceFromIndex(lv_dropdown_get_selected(headerFontDropdown_));
+    outTheme.fonts.subheader = fontChoiceFromIndex(lv_dropdown_get_selected(subheaderFontDropdown_));
+    outTheme.fonts.contentHeader = fontChoiceFromIndex(lv_dropdown_get_selected(contentHeaderFontDropdown_));
+    outTheme.fonts.contentSubheader = fontChoiceFromIndex(lv_dropdown_get_selected(contentSubheaderFontDropdown_));
+    outTheme.fonts.content = fontChoiceFromIndex(lv_dropdown_get_selected(contentFontDropdown_));
+
+    if (outTheme.name != theme_.name) {
+        outTheme.id = String();
+    }
     return true;
 }
 
@@ -746,25 +852,20 @@ void ThemePreviewScreen::applyThemeToInputs(const core::UiTheme& theme)
     updateSingleSwatch(dangerBgField_, dangerBgSwatch_);
     updateSingleSwatch(dangerFgField_, dangerFgSwatch_);
 
-    if (headerSizeSlider_) {
-        lv_slider_set_value(headerSizeSlider_, fontSizeFromPtr(theme.fonts.header), LV_ANIM_OFF);
-        lv_event_send(headerSizeSlider_, LV_EVENT_VALUE_CHANGED, nullptr);
+    if (headerFontDropdown_) {
+        lv_dropdown_set_selected(headerFontDropdown_, fontChoiceIndexFromPtr(theme.fonts.header));
     }
-    if (subheaderSizeSlider_) {
-        lv_slider_set_value(subheaderSizeSlider_, fontSizeFromPtr(theme.fonts.subheader), LV_ANIM_OFF);
-        lv_event_send(subheaderSizeSlider_, LV_EVENT_VALUE_CHANGED, nullptr);
+    if (subheaderFontDropdown_) {
+        lv_dropdown_set_selected(subheaderFontDropdown_, fontChoiceIndexFromPtr(theme.fonts.subheader));
     }
-    if (contentHeaderSizeSlider_) {
-        lv_slider_set_value(contentHeaderSizeSlider_, fontSizeFromPtr(theme.fonts.contentHeader), LV_ANIM_OFF);
-        lv_event_send(contentHeaderSizeSlider_, LV_EVENT_VALUE_CHANGED, nullptr);
+    if (contentHeaderFontDropdown_) {
+        lv_dropdown_set_selected(contentHeaderFontDropdown_, fontChoiceIndexFromPtr(theme.fonts.contentHeader));
     }
-    if (contentSubheaderSizeSlider_) {
-        lv_slider_set_value(contentSubheaderSizeSlider_, fontSizeFromPtr(theme.fonts.contentSubheader), LV_ANIM_OFF);
-        lv_event_send(contentSubheaderSizeSlider_, LV_EVENT_VALUE_CHANGED, nullptr);
+    if (contentSubheaderFontDropdown_) {
+        lv_dropdown_set_selected(contentSubheaderFontDropdown_, fontChoiceIndexFromPtr(theme.fonts.contentSubheader));
     }
-    if (contentSizeSlider_) {
-        lv_slider_set_value(contentSizeSlider_, fontSizeFromPtr(theme.fonts.content), LV_ANIM_OFF);
-        lv_event_send(contentSizeSlider_, LV_EVENT_VALUE_CHANGED, nullptr);
+    if (contentFontDropdown_) {
+        lv_dropdown_set_selected(contentFontDropdown_, fontChoiceIndexFromPtr(theme.fonts.content));
     }
 }
 

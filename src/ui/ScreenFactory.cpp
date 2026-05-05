@@ -98,18 +98,14 @@ std::unique_ptr<screens::SettingsScreen> ScreenFactory::createSettingsScreen(
 }
 
 std::unique_ptr<screens::TouchCalibrationScreen> ScreenFactory::createTouchCalibrationScreen(
-    std::function<void()> onClose,
-    std::function<void()> onSaved)
+    std::function<void()> onClose)
 {
     auto screen = std::make_unique<screens::TouchCalibrationScreen>(theme_);
     screen->setOnCloseRequested(std::move(onClose));
-    screen->setOnSaveRequested([this, onSaved](const core::TouchCalibrationCapture& capture) {
+    screen->setOnSaveRequested([this](const core::TouchCalibrationCapture& capture) {
         bool ok = true;
         if (onSaveTouchCalibration_) {
             ok = onSaveTouchCalibration_(capture);
-        }
-        if (ok && onSaved) {
-            onSaved();
         }
         return ok;
     });

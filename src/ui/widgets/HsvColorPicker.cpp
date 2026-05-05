@@ -19,6 +19,16 @@ constexpr uint8_t kCoarseCellSize = 16;
 constexpr uint32_t kHueGradientStep = 20 * core::kHueScale;
 constexpr uint32_t kHueEmitStep = 5 * core::kHueScale;
 
+uint16_t sliderValueFromHue(uint32_t hue)
+{
+    return static_cast<uint16_t>(359U - core::toLvHue(hue));
+}
+
+uint32_t hueFromSliderValue(uint16_t sliderValue)
+{
+    return core::fromLvHue(static_cast<uint16_t>(359U - sliderValue));
+}
+
 lv_coord_t clampCoord(lv_coord_t value, lv_coord_t min, lv_coord_t max)
 {
     return std::min(max, std::max(min, value));
@@ -103,7 +113,7 @@ void HsvColorPicker::mount(lv_obj_t* parent)
     hueSlider_->SetWidth(kHueSliderThickness);
         hueSlider_->SetHeight(lv_obj_get_height(hueArea_->GetObj()));
     hueSlider_->SetRange(0, 359);
-    hueSlider_->SetValue(core::toLvHue(color_.h), LV_ANIM_OFF);
+    hueSlider_->SetValue(sliderValueFromHue(color_.h), LV_ANIM_OFF);
         lv_obj_set_style_bg_opa(hueSlider_->GetObj(), LV_OPA_TRANSP, LV_PART_MAIN);
         lv_obj_set_style_bg_opa(hueSlider_->GetObj(), LV_OPA_TRANSP, LV_PART_INDICATOR);
         hueSlider_->SetStyleSize(kHueKnobSize, LV_PART_KNOB);
@@ -137,7 +147,7 @@ void HsvColorPicker::setValue(core::HsvColor value)
 {
     color_ = core::clampHsv(value);
     if (hueSlider_) {
-        lv_slider_set_value(hueSlider_->GetObj(), core::toLvHue(color_.h), LV_ANIM_OFF);
+        lv_slider_set_value(hueSlider_->GetObj(), sliderValueFromHue(color_.h), LV_ANIM_OFF);
     }
     gradientHue_ = color_.h;
     emittedHue_ = color_.h;
@@ -175,8 +185,8 @@ void HsvColorPicker::onHueSliderEvent(lv_event_t* event)
         return;
     }
 
-    const uint16_t newHueLv = static_cast<uint16_t>(lv_slider_get_value(self->hueSlider_->GetObj()));
-    const uint32_t newHue = core::fromLvHue(newHueLv);
+    const uint16_t sliderValue = static_cast<uint16_t>(lv_slider_get_value(self->hueSlider_->GetObj()));
+    const uint32_t newHue = hueFromSliderValue(sliderValue);
     if (newHue == self->color_.h && code == LV_EVENT_VALUE_CHANGED) {
         return;
     }

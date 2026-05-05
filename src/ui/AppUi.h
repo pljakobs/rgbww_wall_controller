@@ -58,6 +58,7 @@ private:
     bool initialized_ = false;
     std::function<bool(const core::UiTheme&)> onThemeSaveRequested_;
     std::function<std::vector<core::UiTheme>()> onThemeListRequested_;
+    std::function<void(const core::UiTheme&)> onThemeApplyRequested_;
     std::function<void(int&, int&)> onSettingsLoadRequested_;
     std::function<bool(int, int)> onSettingsSaveRequested_;
     std::function<void(int)> onBrightnessPreviewRequested_;

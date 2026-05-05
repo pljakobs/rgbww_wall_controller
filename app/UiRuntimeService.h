@@ -8,11 +8,10 @@
 namespace lightinator {
 
 /**
- * UiRuntimeService — LVGL lock discipline and periodic tick.
+ * UiRuntimeService — LVGL lock discipline.
  *
  * Centralises all lvgl_runtime_adapter_lock/unlock usage so callers
- * never touch the lock directly.  Owns the periodic tick timer that
- * drives LVGL animation.
+ * never touch the lock directly.
  *
  * Use runOnUiThread() to execute any LVGL mutation from any context.
  */
@@ -21,17 +20,11 @@ public:
     /// Execute fn() inside an LVGL lock/unlock pair.
     void runOnUiThread(std::function<void()> fn);
 
-    /// Start the periodic tick timer (must be called after LVGL init).
-    void start(ui::AppUi& ui);
+    /// Runtime lifecycle hook (reserved for future use).
+    void start();
 
-    /// Stop the tick timer.
+    /// Runtime lifecycle hook (reserved for future use).
     void stop();
-
-private:
-    void tick();
-
-    ui::AppUi*  ui_    = nullptr;
-    SimpleTimer timer_;
 };
 
 } // namespace lightinator

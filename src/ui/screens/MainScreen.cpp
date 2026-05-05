@@ -60,7 +60,6 @@ void MainScreen::mount(lv_obj_t* parent)
     lv_obj_set_style_text_font(buttonLabel, theme_.fonts.subheader, 0);
     lv_obj_set_style_text_color(buttonLabel, theme_.colors.buttonFg, 0);
     lv_obj_center(buttonLabel);
-
     setColorPreview(color_);
 }
 
@@ -286,10 +285,6 @@ void MainScreen::showBurgerMenu()
     styleListButton(settingsItem);
     lv_obj_add_event_cb(settingsItem, onMenuSettingsEvent, LV_EVENT_CLICKED, this);
 
-        // ui-scaffold:main-left:MenuTest:menu-item
-        lv_obj_t* menuTestItem = lv_list_add_btn(list, nullptr, "MenuTest");
-        styleListButton(menuTestItem);
-        lv_obj_add_event_cb(menuTestItem, onMenuMenuTestEvent, LV_EVENT_CLICKED, this);
     }
 
     lv_obj_t* overlay = burgerMenuOverlay_.get();

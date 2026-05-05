@@ -3,6 +3,7 @@
 #include <esp_log.h>
 #include <vector>
 
+#include "AppPolicy.h"
 #include "ui/screens/NetworkInfoScreen.h"
 
 static const char* BINDER_TAG = "NetUiBinder";
@@ -52,7 +53,7 @@ void NetworkUiBinder::bind()
     // Coalesce mDNS burst updates: arm a 300 ms one-shot timer on each change;
     // successive arrivals within the window just restart it.
     wifi_.setNeighboursChangedCallback([this]() {
-        neighbourDebounce_.initializeMs<300>(
+        neighbourDebounce_.initializeMs<policy::kNetworkNeighboursDebounceMs>(
             [](void* self) { static_cast<NetworkUiBinder*>(self)->pushNeighboursOnUiThread(); },
             this).start(true);
     });

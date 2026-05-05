@@ -2,6 +2,8 @@
 
 #include <cstdlib>
 
+#include "ui/core/UiPolicy.h"
+
 extern "C" {
 #include "touch_driver_gt911/touch_driver_gt911.h"
 }
@@ -122,7 +124,7 @@ void TouchCalibrationScreen::onCaptureTapEvent(lv_event_t* event)
     const lv_coord_t width = lv_obj_get_content_width(self->body_);
     const lv_coord_t height = lv_obj_get_content_height(self->body_);
     const CalibrationPoint target = targetPointForIndex(self->captureIndex_, width, height);
-    if (!isPointInsideTarget(localTapPoint, target, 36)) {
+    if (!isPointInsideTarget(localTapPoint, target, core::policy::kTouchCalibrationHitTolerancePx)) {
         return;
     }
 
@@ -130,6 +132,7 @@ void TouchCalibrationScreen::onCaptureTapEvent(lv_event_t* event)
     int16_t rawY = point.y;
     touch_driver_gt911_get_last_raw(&rawX, &rawY);
     self->measuredPoints_[self->captureIndex_] = {rawX, rawY};
+    self->detectedPoints_[self->captureIndex_] = localTapPoint;
     self->touchCapturedForCurrentPress_ = true;
     self->captureIndex_++;
     self->updateCrossStates();
@@ -163,9 +166,6 @@ void TouchCalibrationScreen::updateCrossStates()
         return;
     }
 
-    lv_area_t area = {};
-    lv_obj_get_coords(body_, &area);
-
     for (int i = 0; i < 5; i++) {
         lv_obj_t* cross = crossLabels_[i];
         if (cross == nullptr) {
@@ -182,9 +182,10 @@ void TouchCalibrationScreen::updateCrossStates()
         if (detectedCross != nullptr) {
             if (i < captureIndex_) {
                 lv_obj_clear_flag(detectedCross, LV_OBJ_FLAG_HIDDEN);
+                const CalibrationPoint detected = detectedPoints_[i];
                 lv_obj_set_pos(detectedCross,
-                               measuredPoints_[i].x - area.x1 - 10,
-                               measuredPoints_[i].y - area.y1 - 18);
+                               detected.x - 10,
+                               detected.y - 18);
             } else {
                 lv_obj_add_flag(detectedCross, LV_OBJ_FLAG_HIDDEN);
             }
@@ -221,7 +222,7 @@ TouchCalibrationScreen::CalibrationPoint TouchCalibrationScreen::targetPointForI
                                                                                       int width,
                                                                                       int height)
 {
-    const int margin = 40;
+    const int margin = core::policy::kTouchCalibrationTargetMarginPx;
     switch (index) {
     case 0:
         return {margin, margin};

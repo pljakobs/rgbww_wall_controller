@@ -15,6 +15,11 @@ public:
         bool online = false;
     };
 
+    /// Upsert controller entry by id.
+    ///
+    /// Update semantics:
+    /// - name/ip are only replaced when non-empty values are provided.
+    /// - ttl/online are always refreshed from the incoming ttl.
     void addOrUpdate(uint32_t id, const String& name, const String& ip, int ttl);
     void removeExpired(int elapsedSeconds);
 

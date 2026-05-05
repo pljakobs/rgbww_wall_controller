@@ -36,22 +36,28 @@ void AppNavigator::pushStateToActiveScreen()
     // No-op: ScreenFactory seeds initial state; live updates come via AppUi setters.
 }
 
-void AppNavigator::showMainScreen()
+void AppNavigator::resetScreenInstances()
 {
-    activeScreen_ = ActiveScreen::Main;
-    clearRoot();
+    mainScreen_.reset();
     colorPickerScreen_.reset();
     wifiConfigScreen_.reset();
     networkInfoScreen_.reset();
     themePreviewScreen_.reset();
     touchCalibrationScreen_.reset();
     settingsScreen_.reset();
+    themeSelectorScreen_.reset();
     menuTestScreen_.reset();
+}
+
+void AppNavigator::showMainScreen()
+{
+    activeScreen_ = ActiveScreen::Main;
+    clearRoot();
+    resetScreenInstances();
     mainScreen_ = factory_.createMainScreen(
         [this]() { showColorPickerScreen(); },
         [this]() { showNetworkInfoScreen(); },
         [this]() { showThemeSelectorScreen(); });
-    mainScreen_->setOnOpenMenuTestRequested([this]() { showMenuTestScreen(); });
     mainScreen_->setOnOpenSettingsRequested([this]() { showSettingsScreen(); });
     mainScreen_->mount(root_);
 }
@@ -60,13 +66,7 @@ void AppNavigator::showColorPickerScreen()
 {
     activeScreen_ = ActiveScreen::ColorPicker;
     clearRoot();
-    mainScreen_.reset();
-    wifiConfigScreen_.reset();
-    networkInfoScreen_.reset();
-    themePreviewScreen_.reset();
-    touchCalibrationScreen_.reset();
-    settingsScreen_.reset();
-    menuTestScreen_.reset();
+    resetScreenInstances();
     colorPickerScreen_ = factory_.createColorPickerScreen(
         [this]() { showMainScreen(); });
     colorPickerScreen_->mount(root_);
@@ -76,13 +76,7 @@ void AppNavigator::showNetworkInfoScreen()
 {
     activeScreen_ = ActiveScreen::NetworkInfo;
     clearRoot();
-    mainScreen_.reset();
-    colorPickerScreen_.reset();
-    wifiConfigScreen_.reset();
-    themePreviewScreen_.reset();
-    touchCalibrationScreen_.reset();
-    settingsScreen_.reset();
-    menuTestScreen_.reset();
+    resetScreenInstances();
     networkInfoScreen_ = factory_.createNetworkInfoScreen(
         [this]() { showMainScreen(); });
     networkInfoScreen_->mount(root_);
@@ -95,13 +89,7 @@ void AppNavigator::showWifiConfigScreen()
 {
     activeScreen_ = ActiveScreen::WifiConfig;
     clearRoot();
-    mainScreen_.reset();
-    colorPickerScreen_.reset();
-    networkInfoScreen_.reset();
-    themePreviewScreen_.reset();
-    touchCalibrationScreen_.reset();
-    settingsScreen_.reset();
-    menuTestScreen_.reset();
+    resetScreenInstances();
     wifiConfigScreen_ = factory_.createWifiConfigScreen();
     wifiConfigScreen_->mount(root_);
 }
@@ -120,12 +108,7 @@ void AppNavigator::showThemeSelectorScreen()
 {
     activeScreen_ = ActiveScreen::ThemeSelector;
     clearRoot();
-    mainScreen_.reset();
-    colorPickerScreen_.reset();
-    wifiConfigScreen_.reset();
-    networkInfoScreen_.reset();
-    themePreviewScreen_.reset();
-    menuTestScreen_.reset();
+    resetScreenInstances();
     themeSelectorScreen_ = factory_.createThemeSelectorScreen(
         [this]() { showMainScreen(); },
         [this](const core::UiTheme& t, const String& name) {
@@ -139,12 +122,7 @@ void AppNavigator::showThemeEditorScreen(const core::UiTheme& themeToEdit,
 {
     activeScreen_ = ActiveScreen::ThemeEditor;
     clearRoot();
-    mainScreen_.reset();
-    colorPickerScreen_.reset();
-    wifiConfigScreen_.reset();
-    networkInfoScreen_.reset();
-    themeSelectorScreen_.reset();
-    menuTestScreen_.reset();
+    resetScreenInstances();
     themePreviewScreen_ = factory_.createThemeEditorScreen(
         themeToEdit, suggestedName,
         [this]() { showThemeSelectorScreen(); });
@@ -156,12 +134,7 @@ void AppNavigator::showMenuTestScreen()
 {
     activeScreen_ = ActiveScreen::MenuTest;
     clearRoot();
-    mainScreen_.reset();
-    colorPickerScreen_.reset();
-    wifiConfigScreen_.reset();
-    networkInfoScreen_.reset();
-    themePreviewScreen_.reset();
-    menuTestScreen_.reset();
+    resetScreenInstances();
     menuTestScreen_ = factory_.createMenuTestScreen(
         [this]() { showMainScreen(); });
     menuTestScreen_->mount(root_);
@@ -171,13 +144,7 @@ void AppNavigator::showSettingsScreen()
 {
     activeScreen_ = ActiveScreen::Settings;
     clearRoot();
-    mainScreen_.reset();
-    colorPickerScreen_.reset();
-    wifiConfigScreen_.reset();
-    networkInfoScreen_.reset();
-    themePreviewScreen_.reset();
-    touchCalibrationScreen_.reset();
-    settingsScreen_.reset();
+    resetScreenInstances();
     settingsScreen_ = factory_.createSettingsScreen(
         [this]() { showMainScreen(); },
         [this]() { showTouchCalibrationScreen(); });
@@ -188,15 +155,8 @@ void AppNavigator::showTouchCalibrationScreen()
 {
     activeScreen_ = ActiveScreen::TouchCalibration;
     clearRoot();
-    mainScreen_.reset();
-    colorPickerScreen_.reset();
-    wifiConfigScreen_.reset();
-    networkInfoScreen_.reset();
-    themePreviewScreen_.reset();
-    settingsScreen_.reset();
-    touchCalibrationScreen_.reset();
+    resetScreenInstances();
     touchCalibrationScreen_ = factory_.createTouchCalibrationScreen(
-        [this]() { showSettingsScreen(); },
         [this]() { showSettingsScreen(); });
     touchCalibrationScreen_->mount(root_);
 }

@@ -2,30 +2,13 @@
 
 #include <cstdio>
 
+#include "ui/core/UiPolicy.h"
+
 namespace lightinator::ui::screens {
-
-namespace {
-
-constexpr uint32_t kBrightnessPreviewIntervalMs = 20;
-constexpr uint32_t kDeferredSaveDelayMs = 250;
-constexpr int kTimeoutSliderMinStep = 1;
-constexpr int kTimeoutSliderMaxStep = 121;
-constexpr int kTimeoutStepSeconds = 5;
-constexpr int kTimeoutMaxSeconds = 600;
-
-} // namespace
 
 SettingsScreen::SettingsScreen(const core::UiTheme& theme)
     : theme_(theme)
 {
-}
-
-SettingsScreen::~SettingsScreen()
-{
-    if (deferredSaveTimer_ != nullptr) {
-        lv_timer_del(deferredSaveTimer_);
-        deferredSaveTimer_ = nullptr;
-    }
 }
 
 void SettingsScreen::setOnCloseRequested(std::function<void()> callback)
@@ -52,6 +35,8 @@ void SettingsScreen::setInitialValues(int brightness, int timeout)
 {
     brightness_ = brightness;
     timeout_ = timeout;
+    initialBrightness_ = brightness;
+    initialTimeout_ = timeout;
 }
 
 void SettingsScreen::mount(lv_obj_t* parent)
@@ -108,7 +93,7 @@ void SettingsScreen::mount(lv_obj_t* parent)
 
     timeoutSlider_ = lv_slider_create(body);
     lv_obj_set_width(timeoutSlider_, lv_pct(100));
-    lv_slider_set_range(timeoutSlider_, kTimeoutSliderMinStep, kTimeoutSliderMaxStep);
+    lv_slider_set_range(timeoutSlider_, core::policy::kTimeoutSliderMinStep, core::policy::kTimeoutSliderMaxStep);
     lv_slider_set_value(timeoutSlider_, timeoutSliderValueForSeconds(timeout_), LV_ANIM_OFF);
     lv_obj_add_event_cb(timeoutSlider_, onSliderEvent, LV_EVENT_VALUE_CHANGED, this);
     lv_obj_add_event_cb(timeoutSlider_, onSliderEvent, LV_EVENT_RELEASED, this);
@@ -182,10 +167,11 @@ void SettingsScreen::onCancelButtonEvent(lv_event_t* event)
     if (self == nullptr) {
         return;
     }
-    if (self->deferredSaveTimer_ != nullptr) {
-        lv_timer_del(self->deferredSaveTimer_);
-        self->deferredSaveTimer_ = nullptr;
-    }
+
+    self->brightness_ = self->initialBrightness_;
+    self->timeout_ = self->initialTimeout_;
+    self->emitBrightnessPreview(true);
+
     if (self->onCloseRequested_) {
         self->onCloseRequested_();
     }
@@ -208,25 +194,6 @@ void SettingsScreen::onSliderEvent(lv_event_t* event)
     }
 
     self->refreshValueLabels();
-
-    if (code == LV_EVENT_RELEASED) {
-        self->scheduleDeferredSave();
-    }
-}
-
-void SettingsScreen::onDeferredSaveTimer(lv_timer_t* timer)
-{
-    auto* self = static_cast<SettingsScreen*>(timer->user_data);
-    if (self == nullptr) {
-        lv_timer_del(timer);
-        return;
-    }
-
-    if (self->deferredSaveTimer_ == timer) {
-        self->deferredSaveTimer_ = nullptr;
-    }
-    self->saveSettings(false);
-    lv_timer_del(timer);
 }
 
 void SettingsScreen::onOpenCalibrationEvent(lv_event_t* event)
@@ -264,25 +231,16 @@ void SettingsScreen::emitBrightnessPreview(bool force)
     }
 
     const uint32_t now = lv_tick_get();
-    if (!force && lastPreviewBrightness_ == brightness_ && (now - lastBrightnessPreviewTick_) < kBrightnessPreviewIntervalMs) {
+    if (!force && lastPreviewBrightness_ == brightness_ && (now - lastBrightnessPreviewTick_) < core::policy::kBrightnessPreviewIntervalMs) {
         return;
     }
-    if (!force && lastPreviewBrightness_ != brightness_ && (now - lastBrightnessPreviewTick_) < kBrightnessPreviewIntervalMs) {
+    if (!force && lastPreviewBrightness_ != brightness_ && (now - lastBrightnessPreviewTick_) < core::policy::kBrightnessPreviewIntervalMs) {
         return;
     }
 
     lastBrightnessPreviewTick_ = now;
     lastPreviewBrightness_ = brightness_;
     onBrightnessPreviewRequested_(brightness_);
-}
-
-void SettingsScreen::scheduleDeferredSave()
-{
-    if (deferredSaveTimer_ != nullptr) {
-        lv_timer_del(deferredSaveTimer_);
-        deferredSaveTimer_ = nullptr;
-    }
-    deferredSaveTimer_ = lv_timer_create(onDeferredSaveTimer, kDeferredSaveDelayMs, this);
 }
 
 bool SettingsScreen::saveSettings(bool closeOnSuccess)
@@ -305,27 +263,27 @@ bool SettingsScreen::saveSettings(bool closeOnSuccess)
 int SettingsScreen::timeoutSliderValueForSeconds(int timeout)
 {
     if (timeout < 0) {
-        return kTimeoutSliderMaxStep;
+        return core::policy::kTimeoutSliderMaxStep;
     }
     int clamped = timeout;
-    if (clamped < kTimeoutStepSeconds) {
-        clamped = kTimeoutStepSeconds;
-    } else if (clamped > kTimeoutMaxSeconds) {
-        clamped = kTimeoutMaxSeconds;
+    if (clamped < core::policy::kTimeoutStepSeconds) {
+        clamped = core::policy::kTimeoutStepSeconds;
+    } else if (clamped > core::policy::kTimeoutMaxSeconds) {
+        clamped = core::policy::kTimeoutMaxSeconds;
     }
-    return (clamped + (kTimeoutStepSeconds - 1)) / kTimeoutStepSeconds;
+    return (clamped + (core::policy::kTimeoutStepSeconds - 1)) / core::policy::kTimeoutStepSeconds;
 }
 
 int SettingsScreen::timeoutSecondsForSliderValue(int sliderValue)
 {
-    if (sliderValue >= kTimeoutSliderMaxStep) {
+    if (sliderValue >= core::policy::kTimeoutSliderMaxStep) {
         return -1;
     }
     int clamped = sliderValue;
-    if (clamped < kTimeoutSliderMinStep) {
-        clamped = kTimeoutSliderMinStep;
+    if (clamped < core::policy::kTimeoutSliderMinStep) {
+        clamped = core::policy::kTimeoutSliderMinStep;
     }
-    return clamped * kTimeoutStepSeconds;
+    return clamped * core::policy::kTimeoutStepSeconds;
 }
 
 } // namespace lightinator::ui::screens

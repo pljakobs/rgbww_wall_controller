@@ -59,8 +59,7 @@ public:
         std::function<void()> onClose);
 
     std::unique_ptr<screens::TouchCalibrationScreen> createTouchCalibrationScreen(
-        std::function<void()> onClose,
-        std::function<void()> onSaved);
+        std::function<void()> onClose);
 
     std::unique_ptr<screens::SettingsScreen> createSettingsScreen(
         std::function<void()> onClose,

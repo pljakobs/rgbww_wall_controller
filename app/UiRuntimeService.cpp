@@ -13,25 +13,14 @@ void UiRuntimeService::runOnUiThread(std::function<void()> fn)
     lvgl_runtime_adapter_unlock();
 }
 
-void UiRuntimeService::tick()
+void UiRuntimeService::start()
 {
-    if (ui_) {
-        runOnUiThread([this]() { ui_->tickAnimation(); });
-    }
-}
-
-void UiRuntimeService::start(ui::AppUi& ui)
-{
-    ui_ = &ui;
-    timer_.initializeMs<180>([](void* self) {
-        static_cast<UiRuntimeService*>(self)->tick();
-    }, this).start();
+    // Intentionally empty: UI updates are fully event-driven.
 }
 
 void UiRuntimeService::stop()
 {
-    timer_.stop();
-    ui_ = nullptr;
+    // Intentionally empty: retained for symmetric runtime lifecycle.
 }
 
 } // namespace lightinator

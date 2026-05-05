@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "AppPolicy.h"
+
 namespace lightinator {
 
 struct HardwareTouchCalibration {
@@ -15,9 +17,9 @@ struct HardwareTouchCalibration {
 };
 
 struct HardwareInitOptions {
-    int brightnessPercent = 80;
-    int backlightTimeoutSeconds = 30;
-    uint16_t touchStablePressMs = 50;
+    int brightnessPercent = policy::kDefaultBrightnessPercent;
+    int backlightTimeoutSeconds = policy::kDefaultBacklightTimeoutSeconds;
+    uint16_t touchStablePressMs = policy::kDefaultTouchStablePressMs;
     HardwareTouchCalibration touchCalibration = {};
 };
 
@@ -35,7 +37,10 @@ struct HardwareCapabilities {
  */
 class HardwareInitService {
 public:
+    ~HardwareInitService();
+
     HardwareCapabilities init(const HardwareInitOptions& options = {});
+    void shutdown();
     void setBacklightBrightness(int brightnessPercent);
     void setBacklightTimeoutSeconds(int timeoutSeconds);
     void applyTouchCalibration(const HardwareTouchCalibration& calibration);
@@ -49,6 +54,7 @@ private:
     bool backlightAwake_ = true;
     bool swallowWakeTouch_ = false;
     int64_t lastTouchUs_ = 0;
+    bool touchInitialized_ = false;
 };
 
 } // namespace lightinator

@@ -50,8 +50,8 @@ public:
     void showThemePreviewScreen();
     void showTouchCalibrationScreen();
     void showSettingsScreen();
-        void showThemeSelectorScreen();
-        void showThemeEditorScreen(const core::UiTheme& themeToEdit, const String& suggestedName);
+    void showThemeSelectorScreen();
+    void showThemeEditorScreen(const core::UiTheme& themeToEdit, const String& suggestedName);
     void showMenuTestScreen();
     void setTheme(const core::UiTheme& theme);
 
@@ -83,6 +83,7 @@ private:
     };
 
     void clearRoot();
+    void resetScreenInstances();
     void remountActiveScreen();
 
     lv_obj_t*        root_;
@@ -93,11 +94,11 @@ private:
     std::unique_ptr<screens::WifiConfigScreen>     wifiConfigScreen_;
     std::unique_ptr<screens::NetworkInfoScreen>    networkInfoScreen_;
     std::unique_ptr<screens::ThemePreviewScreen>   themePreviewScreen_;
-    std::unique_ptr<screens::TouchCalibrationScreen>   touchCalibrationScreen_;
-    std::unique_ptr<screens::SettingsScreen>   settingsScreen_;
-        std::unique_ptr<screens::ThemeSelectorScreen>  themeSelectorScreen_;
-        /// themePreviewScreen_ is reused as the editor in the new two-screen flow.
-    std::unique_ptr<screens::MenuTestScreen>   menuTestScreen_;
+    std::unique_ptr<screens::TouchCalibrationScreen> touchCalibrationScreen_;
+    std::unique_ptr<screens::SettingsScreen>         settingsScreen_;
+    std::unique_ptr<screens::ThemeSelectorScreen>    themeSelectorScreen_;
+    /// themePreviewScreen_ is reused as the editor in the new two-screen flow.
+    std::unique_ptr<screens::MenuTestScreen>         menuTestScreen_;
 
     std::function<void(screens::NetworkInfoScreen*)> onNetworkInfoScreenChanged_;
     ActiveScreen activeScreen_ = ActiveScreen::None;

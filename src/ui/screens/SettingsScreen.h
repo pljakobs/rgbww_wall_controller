@@ -15,7 +15,6 @@ namespace lightinator::ui::screens {
 class SettingsScreen : public core::Screen {
 public:
     explicit SettingsScreen(const core::UiTheme& theme);
-    ~SettingsScreen() override;
 
     void mount(lv_obj_t* parent) override;
     void setOnCloseRequested(std::function<void()> callback);
@@ -28,11 +27,9 @@ private:
     static void onOkButtonEvent(lv_event_t* event);
     static void onCancelButtonEvent(lv_event_t* event);
     static void onSliderEvent(lv_event_t* event);
-    static void onDeferredSaveTimer(lv_timer_t* timer);
     static void onOpenCalibrationEvent(lv_event_t* event);
 
     void emitBrightnessPreview(bool force);
-    void scheduleDeferredSave();
     bool saveSettings(bool closeOnSuccess);
     void refreshValueLabels();
     static int timeoutSliderValueForSeconds(int timeout);
@@ -47,9 +44,10 @@ private:
 
     int brightness_ = 80;
     int timeout_ = 30;
+    int initialBrightness_ = 80;
+    int initialTimeout_ = 30;
     uint32_t lastBrightnessPreviewTick_ = 0;
     int lastPreviewBrightness_ = -1;
-    lv_timer_t* deferredSaveTimer_ = nullptr;
 
     lv_obj_t* brightnessSlider_ = nullptr;
     lv_obj_t* timeoutSlider_ = nullptr;

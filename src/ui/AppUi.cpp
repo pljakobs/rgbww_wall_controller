@@ -2,13 +2,9 @@
 
 #include <memory>
 
+#include "AppPolicy.h"
+
 namespace lightinator::ui {
-
-namespace {
-
-std::function<void(const core::UiTheme&)> s_onThemeApplyRequested;
-
-} // namespace
 
 AppUi::~AppUi() = default;
 
@@ -44,13 +40,13 @@ bool AppUi::init()
             setTheme(theme);
             // Persist only concrete theme selections (selector apply).
             // Editor live preview may emit themes with empty ids.
-            if (s_onThemeApplyRequested && theme.id.length() != 0) {
-                s_onThemeApplyRequested(theme);
+            if (onThemeApplyRequested_ && theme.id.length() != 0) {
+                onThemeApplyRequested_(theme);
             }
         },
         onSettingsLoadRequested_ ? onSettingsLoadRequested_ : [](int& brightness, int& timeout) {
-            brightness = 80;
-            timeout = 30;
+            brightness = lightinator::policy::kDefaultBrightnessPercent;
+            timeout = lightinator::policy::kDefaultBacklightTimeoutSeconds;
         },
         onSettingsSaveRequested_ ? onSettingsSaveRequested_ : [](int, int) {
             return true;
@@ -99,7 +95,7 @@ void AppUi::setOnThemeListRequested(std::function<std::vector<core::UiTheme>()> 
 
 void AppUi::setOnThemeApplyRequested(std::function<void(const core::UiTheme&)> callback)
 {
-    s_onThemeApplyRequested = std::move(callback);
+    onThemeApplyRequested_ = std::move(callback);
 }
 
 void AppUi::setOnSettingsLoadRequested(std::function<void(int&, int&)> callback)

@@ -44,6 +44,7 @@ private:
     int captureIndex_ = 0;
     bool touchCapturedForCurrentPress_ = false;
     std::array<CalibrationPoint, 5> measuredPoints_ = {};
+    std::array<CalibrationPoint, 5> detectedPoints_ = {};
     std::array<lv_obj_t*, 5> crossLabels_ = {};
     std::array<lv_obj_t*, 5> detectedCrossLabels_ = {};
 

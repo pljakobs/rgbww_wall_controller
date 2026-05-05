@@ -60,8 +60,15 @@ touch_driver_gt911_calibration_t toDriverCalibration(const HardwareTouchCalibrat
 
 } // namespace
 
+HardwareInitService::~HardwareInitService()
+{
+    shutdown();
+}
+
 HardwareCapabilities HardwareInitService::init(const HardwareInitOptions& options)
 {
+    shutdown();
+
     HardwareCapabilities caps;
 
     brightnessPercent_ = options.brightnessPercent;
@@ -121,6 +128,7 @@ HardwareCapabilities HardwareInitService::init(const HardwareInitOptions& option
     };
 
     if (touch_driver_gt911_init(&touch_cfg) == ESP_OK) {
+        touchInitialized_ = true;
         s_activeHardwareService = this;
         lvgl_runtime_adapter_set_touch_cb(touch_read_cb);
         ESP_LOGI(HW_TAG, "GT911 touch ready");
@@ -130,6 +138,19 @@ HardwareCapabilities HardwareInitService::init(const HardwareInitOptions& option
     }
 
     return caps;
+}
+
+void HardwareInitService::shutdown()
+{
+    if (s_activeHardwareService == this) {
+        s_activeHardwareService = nullptr;
+        lvgl_runtime_adapter_set_touch_cb(nullptr);
+    }
+
+    if (touchInitialized_) {
+        touch_driver_gt911_deinit();
+        touchInitialized_ = false;
+    }
 }
 
 void HardwareInitService::setBacklightBrightness(int brightnessPercent)

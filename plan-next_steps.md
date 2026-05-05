@@ -212,6 +212,29 @@ Issues:
   - fixed: the backlight brightness slider previews live changes on a 20 ms throttle
   - fixed: brightness changes are written to ConfigDB 250 ms after slider release
    
+  - fixed: calibration now auto-closes after the fifth crosshair is captured and saved
+  - fixed: calibration now shows a dimmed cross-hair at the detected touch position on screen
+  - fixed: settings screen OK/Cancel are functional (OK saves; Cancel restores preview brightness and closes)
+
+Code review issues (maintainability + clarity):
+  - fixed: remove stale `createTouchCalibrationScreen(onSaved)` API contract and call sites; keep only close callback
+  - fixed: remove dead deferred-save timer plumbing from SettingsScreen after moving to explicit OK save semantics
+  - fixed: remove AppUi file-static theme apply callback state; use instance-owned callback storage
+  - fixed: define explicit lifecycle/teardown contract for HardwareInitService touch callback bridge (`s_activeHardwareService`) via `shutdown()` and destructor cleanup
+  - fixed: remove UiRuntimeService periodic tick (AppUi updates remain event-driven)
+  - fixed: reduce AppNavigator screen-transition duplication with a common `resetScreenInstances()` helper
+  - fixed: split `application.cpp` responsibilities by extracting display settings + touch calibration persistence/solver into `DisplaySettingsService`
+  - fixed: consolidate behavioral constants into shared policy headers (`app/AppPolicy.h`, `src/ui/core/UiPolicy.h`)
+  - fixed: gate MenuTestScreen from normal user navigation (menu entry removed)
+  - fixed: clean up AppNavigator header formatting/style drift
+  - fixed: document Controllers::addOrUpdate merge semantics for empty name/ip updates
+  - open: introduce a lightweight test target and smoke tests for navigation/calibration/settings persistence flows
+  - fixed: hue slider mapping corrected (slider direction now matches displayed hue strip)
+
+
+add features:
+  from ~/devel/esp_rgbww_firmware, copy ./include/MultiOutputStream.h and ./include/udpSyslogStream.h and wire those in to the app including a configuration settings page
+  
 later:
 
 Moving from an integrated app and framework to a framework:

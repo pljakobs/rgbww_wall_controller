@@ -189,31 +189,120 @@ void MainScreen::onMenuDismissEvent(lv_event_t* event)
 
 void MainScreen::showBurgerMenu()
 {
-    if (burgerMenuPanel_) {
+    bool createdNow = false;
+    if (!burgerMenuOverlay_.valid()) {
+        createdNow = true;
+        lv_obj_t* root = decorated_->root();
+
+        // Full-screen transparent dismiss layer; drawer itself provides visual overlay.
+        lv_obj_t* overlay = lv_obj_create(root);
+        burgerMenuOverlay_.attach(overlay);
+        lv_obj_add_flag(overlay, LV_OBJ_FLAG_FLOATING | LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_flag(overlay, LV_OBJ_FLAG_IGNORE_LAYOUT);
+        lv_obj_clear_flag(overlay, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_pos(overlay, 0, 0);
+        lv_obj_set_size(overlay, lv_pct(100), lv_pct(100));
+        lv_obj_set_style_bg_opa(overlay, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_width(overlay, 0, 0);
+        lv_obj_set_style_pad_all(overlay, 0, 0);
+        lv_obj_add_event_cb(overlay, onMenuDismissEvent, LV_EVENT_CLICKED, this);
+
+        // Left drawer panel occupying half the screen below the header.
+        lv_obj_t* panel = lv_obj_create(overlay);
+        burgerMenuPanel_.attach(panel);
+        lv_obj_add_flag(panel, LV_OBJ_FLAG_FLOATING | LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_flag(panel, LV_OBJ_FLAG_IGNORE_LAYOUT);
+        lv_obj_clear_flag(panel, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_style_bg_color(panel, theme_.colors.buttonBg, 0);
+        lv_obj_set_style_bg_opa(panel, LV_OPA_COVER, 0);
+        lv_obj_set_style_radius(panel, 0, 0);
+        lv_obj_set_style_border_width(panel, 1, 0);
+        lv_obj_set_style_border_color(panel, theme_.colors.shadow, 0);
+        lv_obj_set_style_pad_all(panel, 0, 0);
+        lv_obj_set_style_pad_row(panel, 0, 0);
+        lv_obj_set_flex_flow(panel, LV_FLEX_FLOW_COLUMN);
+
+        lv_obj_t* title = lv_label_create(panel);
+        lv_label_set_text_static(title, "Menu");
+        lv_obj_set_style_text_font(title, theme_.fonts.subheader, 0);
+        lv_obj_set_style_text_color(title, theme_.colors.buttonFg, 0);
+        lv_obj_set_style_pad_all(title, 12, 0);
+
+        lv_obj_t* list = lv_list_create(panel);
+        lv_obj_set_size(list, lv_pct(100), lv_pct(100));
+        lv_obj_set_style_bg_opa(list, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_width(list, 0, 0);
+        lv_obj_set_style_pad_all(list, 0, 0);
+        lv_obj_set_style_pad_row(list, 0, 0);
+        lv_obj_set_scroll_dir(list, LV_DIR_VER);
+        lv_obj_clear_flag(list, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
+
+        auto styleListButton = [this](lv_obj_t* btn) {
+            lv_obj_set_width(btn, lv_pct(100));
+            lv_obj_set_style_border_width(btn, 0, 0);
+            lv_obj_set_style_radius(btn, 0, 0);
+            lv_obj_set_style_bg_opa(btn, LV_OPA_TRANSP, 0);
+            lv_obj_set_style_bg_color(btn, theme_.colors.headerBg, LV_STATE_PRESSED);
+            lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, LV_STATE_PRESSED);
+            lv_obj_set_style_text_font(btn, theme_.fonts.contentHeader, 0);
+            lv_obj_set_style_text_color(btn, theme_.colors.buttonFg, 0);
+            lv_obj_set_style_pad_left(btn, 16, 0);
+            lv_obj_set_style_pad_right(btn, 16, 0);
+            lv_obj_set_height(btn, 64);
+            lv_obj_set_ext_click_area(btn, 8);
+        };
+
+        lv_obj_t* colorItem = lv_list_add_btn(list, nullptr, "Color Picker");
+        styleListButton(colorItem);
+        lv_obj_add_event_cb(colorItem, onMenuColorPickerEvent, LV_EVENT_CLICKED, this);
+
+        lv_obj_t* networkItem = lv_list_add_btn(list, nullptr, "Network Info");
+        styleListButton(networkItem);
+        lv_obj_add_event_cb(networkItem, onMenuNetworkInfoEvent, LV_EVENT_CLICKED, this);
+
+        lv_obj_t* themeItem = lv_list_add_btn(list, nullptr, "Theme View");
+        styleListButton(themeItem);
+        lv_obj_add_event_cb(themeItem, onMenuThemeEvent, LV_EVENT_CLICKED, this);
+
+        // ui-scaffold:main-left:MenuTest:menu-item
+        lv_obj_t* generatedItem = lv_list_add_btn(list, nullptr, "MenuTest");
+        styleListButton(generatedItem);
+        lv_obj_add_event_cb(generatedItem, onMenuMenuTestEvent, LV_EVENT_CLICKED, this);
+    }
+
+    lv_obj_t* overlay = burgerMenuOverlay_.get();
+    if (overlay == nullptr) {
+        return;
+    }
+
+    if (createdNow || lv_obj_has_flag(overlay, LV_OBJ_FLAG_HIDDEN)) {
+        lv_obj_clear_flag(overlay, LV_OBJ_FLAG_HIDDEN);
+    } else {
         hideBurgerMenu();
         return;
     }
 
+    updateBurgerMenuGeometry();
+}
+
+void MainScreen::hideBurgerMenu()
+{
+    if (lv_obj_t* overlay = burgerMenuOverlay_.get()) {
+        lv_obj_add_flag(overlay, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+void MainScreen::updateBurgerMenuGeometry()
+{
+    lv_obj_t* overlay = burgerMenuOverlay_.get();
+    lv_obj_t* panel = burgerMenuPanel_.get();
+    if (overlay == nullptr || panel == nullptr || decorated_ == nullptr) {
+        return;
+    }
+
     lv_obj_t* root = decorated_->root();
-
-    // Full-screen transparent dismiss layer; drawer itself provides visual overlay.
-    lv_obj_t* dismiss = lv_obj_create(root);
-    lv_obj_add_flag(dismiss, LV_OBJ_FLAG_FLOATING | LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_add_flag(dismiss, LV_OBJ_FLAG_IGNORE_LAYOUT);
-    lv_obj_clear_flag(dismiss, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_pos(dismiss, 0, 0);
-    lv_obj_set_size(dismiss, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_bg_opa(dismiss, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(dismiss, 0, 0);
-    lv_obj_set_style_pad_all(dismiss, 0, 0);
-    lv_obj_add_event_cb(dismiss, onMenuDismissEvent, LV_EVENT_CLICKED, this);
-
-    // Left drawer panel occupying half the screen below the header.
-    lv_obj_t* panel = lv_obj_create(dismiss);
-    burgerMenuPanel_ = panel;
-    lv_obj_add_flag(panel, LV_OBJ_FLAG_FLOATING | LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_add_flag(panel, LV_OBJ_FLAG_IGNORE_LAYOUT);
-    lv_obj_clear_flag(panel, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_pos(overlay, 0, 0);
+    lv_obj_set_size(overlay, lv_obj_get_width(root), lv_obj_get_height(root));
 
     const lv_coord_t rootPadTop = lv_obj_get_style_pad_top(root, LV_PART_MAIN);
     const lv_coord_t top = rootPadTop + theme_.headerHeight;
@@ -225,72 +314,9 @@ void MainScreen::showBurgerMenu()
     if (drawerHeight < 80) {
         drawerHeight = 80;
     }
+
     lv_obj_set_size(panel, drawerWidth, drawerHeight);
     lv_obj_set_pos(panel, 0, top);
-    lv_obj_set_style_bg_color(panel, theme_.colors.buttonBg, 0);
-    lv_obj_set_style_bg_opa(panel, LV_OPA_COVER, 0);
-    lv_obj_set_style_radius(panel, 0, 0);
-    lv_obj_set_style_border_width(panel, 1, 0);
-    lv_obj_set_style_border_color(panel, theme_.colors.shadow, 0);
-    lv_obj_set_style_pad_all(panel, 0, 0);
-    lv_obj_set_style_pad_row(panel, 0, 0);
-    lv_obj_set_flex_flow(panel, LV_FLEX_FLOW_COLUMN);
-
-    lv_obj_t* title = lv_label_create(panel);
-    lv_label_set_text_static(title, "Menu");
-    lv_obj_set_style_text_font(title, theme_.fonts.subheader, 0);
-    lv_obj_set_style_text_color(title, theme_.colors.buttonFg, 0);
-    lv_obj_set_style_pad_all(title, 12, 0);
-
-    lv_obj_t* list = lv_list_create(panel);
-    lv_obj_set_size(list, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_bg_opa(list, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(list, 0, 0);
-    lv_obj_set_style_pad_all(list, 0, 0);
-    lv_obj_set_style_pad_row(list, 0, 0);
-    lv_obj_set_scroll_dir(list, LV_DIR_VER);
-    lv_obj_clear_flag(list, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
-
-    auto styleListButton = [this](lv_obj_t* btn) {
-        lv_obj_set_width(btn, lv_pct(100));
-        lv_obj_set_style_border_width(btn, 0, 0);
-        lv_obj_set_style_radius(btn, 0, 0);
-        lv_obj_set_style_bg_opa(btn, LV_OPA_TRANSP, 0);
-        lv_obj_set_style_bg_color(btn, theme_.colors.headerBg, LV_STATE_PRESSED);
-        lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, LV_STATE_PRESSED);
-        lv_obj_set_style_text_font(btn, theme_.fonts.contentHeader, 0);
-        lv_obj_set_style_text_color(btn, theme_.colors.buttonFg, 0);
-        lv_obj_set_style_pad_left(btn, 16, 0);
-        lv_obj_set_style_pad_right(btn, 16, 0);
-        lv_obj_set_height(btn, 64);
-        lv_obj_set_ext_click_area(btn, 8);
-    };
-
-    lv_obj_t* colorItem = lv_list_add_btn(list, nullptr, "Color Picker");
-    styleListButton(colorItem);
-    lv_obj_add_event_cb(colorItem, onMenuColorPickerEvent, LV_EVENT_CLICKED, this);
-
-    lv_obj_t* networkItem = lv_list_add_btn(list, nullptr, "Network Info");
-    styleListButton(networkItem);
-    lv_obj_add_event_cb(networkItem, onMenuNetworkInfoEvent, LV_EVENT_CLICKED, this);
-
-    lv_obj_t* themeItem = lv_list_add_btn(list, nullptr, "Theme View");
-    styleListButton(themeItem);
-    lv_obj_add_event_cb(themeItem, onMenuThemeEvent, LV_EVENT_CLICKED, this);
-
-    // ui-scaffold:main-left:MenuTest:menu-item
-    lv_obj_t* generatedItem = lv_list_add_btn(list, nullptr, "MenuTest");
-    styleListButton(generatedItem);
-    lv_obj_add_event_cb(generatedItem, onMenuMenuTestEvent, LV_EVENT_CLICKED, this);
-}
-
-void MainScreen::hideBurgerMenu()
-{
-    if (burgerMenuPanel_) {
-        // delete the dismiss layer (parent of panel)
-        lv_obj_del(lv_obj_get_parent(burgerMenuPanel_));
-        burgerMenuPanel_ = nullptr;
-    }
 }
 
 } // namespace lightinator::ui::screens

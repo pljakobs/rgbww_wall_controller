@@ -116,7 +116,6 @@ lv_color_t toLvColor(const lightinator::ui::core::HsvColor& color)
 
 namespace lightinator::ui::screens {
 
-ThemePreviewScreen::ThemePreviewScreen(const core::UiTheme& theme)
 ThemePreviewScreen::ThemePreviewScreen(const core::UiTheme& theme, const String& suggestedName)
     : theme_(theme), suggestedName_(suggestedName)
 {
@@ -253,13 +252,14 @@ void ThemePreviewScreen::mount(lv_obj_t* parent)
     buildColorsTab(colorsTab);
     buildFontsTab(fontsTab);
 
-    keyboard_ = lv_keyboard_create(decorated_->root());
-    lv_obj_set_size(keyboard_, lv_pct(100), lv_pct(45));
-    lv_obj_align(keyboard_, LV_ALIGN_BOTTOM_MID, 0, 0);
-    lv_keyboard_set_popovers(keyboard_, true);
-    lv_obj_add_flag(keyboard_, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_event_cb(keyboard_, onKeyboardEvent, LV_EVENT_READY, this);
-    lv_obj_add_event_cb(keyboard_, onKeyboardEvent, LV_EVENT_CANCEL, this);
+    lv_obj_t* keyboard = lv_keyboard_create(decorated_->root());
+    keyboard_.attach(keyboard);
+    lv_obj_set_size(keyboard, lv_pct(100), lv_pct(45));
+    lv_obj_align(keyboard, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_keyboard_set_popovers(keyboard, true);
+    lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_event_cb(keyboard, onKeyboardEvent, LV_EVENT_READY, this);
+    lv_obj_add_event_cb(keyboard, onKeyboardEvent, LV_EVENT_CANCEL, this);
 }
 
 void ThemePreviewScreen::buildColorsTab(lv_obj_t* tab)
@@ -426,12 +426,12 @@ void ThemePreviewScreen::onSaveButtonEvent(lv_event_t* event)
 void ThemePreviewScreen::onTextAreaEvent(lv_event_t* event)
 {
     auto* self = static_cast<ThemePreviewScreen*>(lv_event_get_user_data(event));
-    if (self == nullptr || self->keyboard_ == nullptr) {
+    if (self == nullptr) {
         return;
     }
 
-    if (!lv_obj_is_valid(self->keyboard_)) {
-        self->keyboard_ = nullptr;
+    lv_obj_t* keyboard = self->keyboard_.get();
+    if (keyboard == nullptr) {
         return;
     }
 
@@ -439,8 +439,8 @@ void ThemePreviewScreen::onTextAreaEvent(lv_event_t* event)
     lv_obj_t* target = lv_event_get_target(event);
 
     if (code == LV_EVENT_CLICKED || code == LV_EVENT_FOCUSED) {
-        lv_keyboard_set_textarea(self->keyboard_, target);
-        lv_obj_clear_flag(self->keyboard_, LV_OBJ_FLAG_HIDDEN);
+        lv_keyboard_set_textarea(keyboard, target);
+        lv_obj_clear_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
         return;
     }
 
@@ -520,7 +520,6 @@ void ThemePreviewScreen::onFontDropdownChanged(lv_event_t* event)
     }
 }
 
-void ThemePreviewScreen::onSchemeDropdownChanged(lv_event_t* event)
 void ThemePreviewScreen::onColorPickerCancelEvent(lv_event_t* event)
 {
     auto* self = static_cast<ThemePreviewScreen*>(lv_event_get_user_data(event));
@@ -537,17 +536,12 @@ void ThemePreviewScreen::onColorPickerCancelEvent(lv_event_t* event)
 
 void ThemePreviewScreen::hideKeyboard()
 {
-    if (keyboard_ == nullptr) {
+    lv_obj_t* keyboard = keyboard_.get();
+    if (keyboard == nullptr) {
         return;
     }
-
-    if (!lv_obj_is_valid(keyboard_)) {
-        keyboard_ = nullptr;
-        return;
-    }
-
-    lv_keyboard_set_textarea(keyboard_, nullptr);
-    lv_obj_add_flag(keyboard_, LV_OBJ_FLAG_HIDDEN);
+    lv_keyboard_set_textarea(keyboard, nullptr);
+    lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
 }
 
 void ThemePreviewScreen::showColorPickerForField(lv_obj_t* field, lv_obj_t* swatch)
@@ -564,14 +558,15 @@ void ThemePreviewScreen::showColorPickerForField(lv_obj_t* field, lv_obj_t* swat
     activeColorOriginalText_ = lv_textarea_get_text(field);
 
     lv_obj_t* root = decorated_->root();
-    colorPickerOverlay_ = lv_obj_create(root);
-    lv_obj_set_size(colorPickerOverlay_, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_bg_color(colorPickerOverlay_, lv_color_black(), 0);
-    lv_obj_set_style_bg_opa(colorPickerOverlay_, LV_OPA_40, 0);
-    lv_obj_set_style_border_width(colorPickerOverlay_, 0, 0);
-    lv_obj_set_style_pad_all(colorPickerOverlay_, 0, 0);
+    lv_obj_t* overlay = lv_obj_create(root);
+    colorPickerOverlay_.attach(overlay);
+    lv_obj_set_size(overlay, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_bg_color(overlay, lv_color_black(), 0);
+    lv_obj_set_style_bg_opa(overlay, LV_OPA_40, 0);
+    lv_obj_set_style_border_width(overlay, 0, 0);
+    lv_obj_set_style_pad_all(overlay, 0, 0);
 
-    lv_obj_t* panel = lv_obj_create(colorPickerOverlay_);
+    lv_obj_t* panel = lv_obj_create(overlay);
     lv_obj_set_size(panel, 290, 320);
     lv_obj_center(panel);
     lv_obj_set_style_bg_color(panel, theme_.colors.contentBg, 0);
@@ -646,9 +641,9 @@ void ThemePreviewScreen::showColorPickerForField(lv_obj_t* field, lv_obj_t* swat
 
 void ThemePreviewScreen::hideColorPicker()
 {
-    if (colorPickerOverlay_) {
-        lv_obj_del(colorPickerOverlay_);
-        colorPickerOverlay_ = nullptr;
+    if (lv_obj_t* overlay = colorPickerOverlay_.get()) {
+        colorPickerOverlay_.detach();
+        lv_obj_del(overlay);
     }
     colorPickerWidget_.reset();
     activeColorOriginalText_ = String();

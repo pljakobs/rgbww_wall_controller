@@ -144,19 +144,20 @@ void WifiConfigScreen::mount(lv_obj_t* parent)
         ->SetStyleTextFont(theme_.fonts.contentSubheader, 0)
         ->SetStylePadAll(8, 0);
 
-    keyboard_ = lv_keyboard_create(parent);
-    lv_obj_set_size(keyboard_, lv_pct(100), lv_pct(50));
-    lv_obj_align(keyboard_, LV_ALIGN_TOP_MID, 0, 0);
-    lv_keyboard_set_popovers(keyboard_, true);
-    lv_obj_set_style_pad_row(keyboard_, 8, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_column(keyboard_, 8, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(keyboard_, theme_.fonts.subheader, LV_PART_ITEMS | LV_STATE_DEFAULT);
-    lv_obj_add_flag(keyboard_, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_event_cb(keyboard_, onKeyboardEvent, LV_EVENT_READY, this);
-    lv_obj_add_event_cb(keyboard_, onKeyboardEvent, LV_EVENT_CANCEL, this);
+    lv_obj_t* keyboard = lv_keyboard_create(parent);
+    keyboard_.attach(keyboard);
+    lv_obj_set_size(keyboard, lv_pct(100), lv_pct(50));
+    lv_obj_align(keyboard, LV_ALIGN_TOP_MID, 0, 0);
+    lv_keyboard_set_popovers(keyboard, true);
+    lv_obj_set_style_pad_row(keyboard, 8, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_column(keyboard, 8, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(keyboard, theme_.fonts.subheader, LV_PART_ITEMS | LV_STATE_DEFAULT);
+    lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_event_cb(keyboard, onKeyboardEvent, LV_EVENT_READY, this);
+    lv_obj_add_event_cb(keyboard, onKeyboardEvent, LV_EVENT_CANCEL, this);
 
     // Emit characters on key release (keyup) rather than key press (keydown)
-    lv_btnmatrix_set_btn_ctrl_all(keyboard_, LV_BTNMATRIX_CTRL_CLICK_TRIG);
+    lv_btnmatrix_set_btn_ctrl_all(keyboard, LV_BTNMATRIX_CTRL_CLICK_TRIG);
 
     setStatusText(F("Waiting for network list"));
 }
@@ -200,22 +201,24 @@ void WifiConfigScreen::setOnConnectRequested(std::function<void(const String&, c
 
 void WifiConfigScreen::showKeyboardFor(lv_obj_t* textArea)
 {
-    if(keyboard_ == nullptr || textArea == nullptr) {
+    lv_obj_t* keyboard = keyboard_.get();
+    if(keyboard == nullptr || textArea == nullptr) {
         return;
     }
 
-    lv_keyboard_set_textarea(keyboard_, textArea);
-    lv_obj_clear_flag(keyboard_, LV_OBJ_FLAG_HIDDEN);
+    lv_keyboard_set_textarea(keyboard, textArea);
+    lv_obj_clear_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
 }
 
 void WifiConfigScreen::hideKeyboard()
 {
-    if(keyboard_ == nullptr) {
+    lv_obj_t* keyboard = keyboard_.get();
+    if(keyboard == nullptr) {
         return;
     }
 
-    lv_keyboard_set_textarea(keyboard_, nullptr);
-    lv_obj_add_flag(keyboard_, LV_OBJ_FLAG_HIDDEN);
+    lv_keyboard_set_textarea(keyboard, nullptr);
+    lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
 }
 
 String WifiConfigScreen::selectedSsidFromList() const

@@ -32,6 +32,7 @@ public:
     void setTheme(const core::UiTheme& theme);
     void setOnThemeSaveRequested(std::function<bool(const core::UiTheme&)> callback);
     void setOnThemeListRequested(std::function<std::vector<core::UiTheme>()> callback);
+    void setOnThemeApplyRequested(std::function<void(const core::UiTheme&)> callback);
 
     void showWifiConfigScreen();
     void closeWifiConfigScreen();

@@ -4,6 +4,12 @@
 
 namespace lightinator::ui {
 
+namespace {
+
+std::function<void(const core::UiTheme&)> s_onThemeApplyRequested;
+
+} // namespace
+
 AppUi::~AppUi() = default;
 
 AppUi::AppUi()
@@ -34,7 +40,14 @@ bool AppUi::init()
     currentColor_ = core::clampHsv(currentColor_);
     navigator_ = std::make_unique<AppNavigator>(
         root_, state_, currentColor_, theme_, onThemeSaveRequested_, onThemeListRequested_,
-        [this](const core::UiTheme& theme) { setTheme(theme); });
+        [this](const core::UiTheme& theme) {
+            setTheme(theme);
+            // Persist only concrete theme selections (selector apply).
+            // Editor live preview may emit themes with empty ids.
+            if (s_onThemeApplyRequested && theme.id.length() != 0) {
+                s_onThemeApplyRequested(theme);
+            }
+        });
     navigator_->setOnNetworkInfoScreenChanged(
         [this](screens::NetworkInfoScreen* screen) {
             networkInfoPresenter_.bind(screen);
@@ -68,6 +81,11 @@ void AppUi::setOnThemeSaveRequested(std::function<bool(const core::UiTheme&)> ca
 void AppUi::setOnThemeListRequested(std::function<std::vector<core::UiTheme>()> callback)
 {
     onThemeListRequested_ = std::move(callback);
+}
+
+void AppUi::setOnThemeApplyRequested(std::function<void(const core::UiTheme&)> callback)
+{
+    s_onThemeApplyRequested = std::move(callback);
 }
 
 void AppUi::showWifiConfigScreen()

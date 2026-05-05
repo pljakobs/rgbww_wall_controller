@@ -9,6 +9,7 @@
 #include <lvglCpp.h>
 
 #include "ui/core/Screen.h"
+#include "ui/core/LvObjRef.h"
 #include "ui/core/UiTheme.h"
 #include "ui/screens/DecoratedScreen.h"
 
@@ -53,7 +54,7 @@ private:
     std::unique_ptr<lvgl::widget::Object> actionsRow_;
     std::unique_ptr<lvgl::widget::Button> connectButton_;
     std::unique_ptr<lvgl::widget::TextArea> statusField_;
-    lv_obj_t* keyboard_{nullptr};
+    core::LvObjRef keyboard_;
 };
 
 } // namespace lightinator::ui::screens

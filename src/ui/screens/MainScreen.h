@@ -7,6 +7,7 @@
 #include <lvglCpp.h>
 
 #include "ui/core/HsvColor.h"
+#include "ui/core/LvObjRef.h"
 #include "ui/core/Screen.h"
 #include "ui/core/UiTheme.h"
 #include "ui/screens/DecoratedScreen.h"
@@ -36,6 +37,7 @@ private:
 
     void showBurgerMenu();
     void hideBurgerMenu();
+    void updateBurgerMenuGeometry();
 
     core::HsvColor color_;
     core::UiTheme theme_;
@@ -45,7 +47,8 @@ private:
     std::function<void()> onOpenMenuTestRequested_;
     bool wifiConnected_ = false;
 
-    lv_obj_t* burgerMenuPanel_ = nullptr;
+    core::LvObjRef burgerMenuOverlay_;
+    core::LvObjRef burgerMenuPanel_;
 
     std::unique_ptr<DecoratedScreen> decorated_;
     std::unique_ptr<lvgl::widget::Object> bodyLayout_;

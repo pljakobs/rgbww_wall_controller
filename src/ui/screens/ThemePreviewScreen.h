@@ -9,6 +9,7 @@
 
 #include "ui/core/Screen.h"
 #include "ui/core/UiTheme.h"
+#include "ui/core/LvObjRef.h"
 #include "ui/screens/DecoratedScreen.h"
 #include "ui/widgets/HsvColorPicker.h"
 
@@ -57,8 +58,8 @@ private:
 
     lv_obj_t* schemaNameField_ = nullptr;
     lv_obj_t* statusLabel_ = nullptr;
-    lv_obj_t* keyboard_ = nullptr;
-    lv_obj_t* colorPickerOverlay_ = nullptr;
+    core::LvObjRef keyboard_;
+    core::LvObjRef colorPickerOverlay_;
     lv_obj_t* activeColorField_ = nullptr;
     lv_obj_t* activeColorSwatch_ = nullptr;
     String activeColorOriginalText_;

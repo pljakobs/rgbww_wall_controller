@@ -145,6 +145,20 @@ bool saveThemeSchema(UiTheme theme)
     return true;
 }
 
+bool setActiveThemeId(const String& themeId)
+{
+    if (!s_cfg || themeId.length() == 0) {
+        return false;
+    }
+
+    AppConfig::Root configRoot(*s_cfg);
+    if (auto cfgUpdate = configRoot.update()) {
+        cfgUpdate.setActiveTheme(themeId);
+        return true;
+    }
+    return false;
+}
+
 std::vector<UiTheme> loadThemeSchemas()
 {
     // Start with built-in themes (flash JSON, always present).
@@ -231,6 +245,9 @@ void init()
     });
     s_ui.setOnThemeListRequested([]() {
         return loadThemeSchemas();
+    });
+    s_ui.setOnThemeApplyRequested([](const UiTheme& theme) {
+        setActiveThemeId(theme.id);
     });
 
     s_wifi      = std::make_unique<AppWIFI>(*s_cfg);

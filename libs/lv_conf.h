@@ -78,9 +78,14 @@
 /*===========================================================================
  * Fonts
  *==========================================================================*/
+#define LV_FONT_MONTSERRAT_10  1
+#define LV_FONT_MONTSERRAT_12  1
 #define LV_FONT_MONTSERRAT_14  1
 #define LV_FONT_MONTSERRAT_16  1
+#define LV_FONT_MONTSERRAT_22  1
 #define LV_FONT_MONTSERRAT_24  1
+#define LV_FONT_MONTSERRAT_34  1
+#define LV_FONT_MONTSERRAT_36  1
 #define LV_FONT_DEFAULT        &lv_font_montserrat_14
 
 /*===========================================================================

@@ -1,376 +1,309 @@
 #include <SmingCore.h>
+#include <esp_log.h>
 
-/*
- * Application working model
- * -------------------------
- * This file is the glue layer between four subsystems:
- *
- * 1. Sming application startup
- *    `init()` is called once at boot and is our only top-level entrypoint.
- *
- * 2. The display + LVGL runtime adapters
- *    `esp_lcd_adapter_init()` brings up the board display driver and then
- *    starts LVGL through `lvgl_runtime_adapter`.
- *
- * 3. Generated EEZ/LVGL UI wrappers
- *    `s_ui` is a generated object graph that gives us typed access to the
- *    widgets exported by the EEZ project, such as buttons and LEDs.
- *
- * 4. Application behavior
- *    This file adds touch input, button event handling, and a timer-driven LED
- *    animation on top of the generated UI.
- *
- * The important ownership rule is:
- * - LVGL owns the underlying `lv_obj_t*` widgets.
- * - The generated connector stores typed references/wrappers to those widgets.
- * - Application code talks to widgets only through the generated connector.
- *
- * The important threading rule is:
- * - LVGL itself is serviced by the runtime adapter task.
- * - Any application code that touches LVGL objects outside of an LVGL event
- *   callback must hold the LVGL lock.
- * - Therefore timer-driven UI updates below use
- *   `lvgl_runtime_adapter_lock()/unlock()`.
- */
+#include <algorithm>
+#include <array>
+#include <cctype>
+#include <cmath>
+#include <cstdio>
 
-extern "C" {
-#include "esp_log.h"
-#include "driver/gpio.h"
-#include "esp_lcd_adapter/esp_lcd_adapter.h"
-#include "lvgl_runtime_adapter/lvgl_runtime_adapter.h"
-#include "touch_driver_gt911/touch_driver_gt911.h"
-#include "ui/ui.h"
-}
-
-#include "ui_codegen/generated/eez_ui_connector.hpp"
-
-/* Backlight is on GPIO 38, active-high on the GUITION-4848S040 board. */
-static constexpr gpio_num_t BACKLIGHT_GPIO = GPIO_NUM_38;
-
-/*
- * The board ships with the TFT backlight disabled after reset.
- * Turning the display subsystem on without enabling the backlight can make the
- * system appear dead even though LVGL is already rendering correctly.
- */
-static void backlight_on()
-{
-    gpio_config_t cfg = {};
-    cfg.pin_bit_mask = (1ULL << BACKLIGHT_GPIO);
-    cfg.mode        = GPIO_MODE_OUTPUT;
-    cfg.pull_up_en  = GPIO_PULLUP_DISABLE;
-    cfg.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    cfg.intr_type   = GPIO_INTR_DISABLE;
-    gpio_config(&cfg);
-    gpio_set_level(BACKLIGHT_GPIO, 1);
-}
+#include "builtin_themes.h"
+#include "ui/AppUi.h"
+#include "ui/core/UiTheme.h"
+#include "ui/WifiConfigFlow.h"
+#include "networking.h"
+#include "NetworkUiBinder.h"
+#include "HardwareInitService.h"
+#include "UiRuntimeService.h"
+#include "DisplaySettingsService.h"
+#include <Storage/SysMem.h>
+#include <Storage/ProgMem.h>
+#include <Storage/Debug.h>
+#include <LittleFS.h>
+#include <app-config.h>
+#include <app-data.h>
 
 static const char* TAG = "APP";
 
-static constexpr uint16_t WIDTH  = 480;
-static constexpr uint16_t HEIGHT = 480;
-static constexpr gpio_num_t TOUCH_SDA_GPIO = GPIO_NUM_19;
-static constexpr gpio_num_t TOUCH_SCL_GPIO = GPIO_NUM_45;
+static lightinator::ui::AppUi               s_ui;
+static lightinator::HardwareInitService     s_hw;
+static lightinator::UiRuntimeService        s_ui_runtime;
+static std::unique_ptr<AppConfig>           s_cfg;
+static std::unique_ptr<AppData>             s_data;
+static std::unique_ptr<AppWIFI>             s_wifi;
+static std::unique_ptr<lightinator::ui::WifiConfigFlow> s_wifi_flow;
+static std::unique_ptr<lightinator::NetworkUiBinder>    s_net_ui_binder;
+bool fsMounted = false;
 
-/*
- * `s_ui` owns the generated connector/instantiator. Calling `s_ui.init()`
- * executes the generated `ui_init()` function and then binds the generated C++
- * wrappers to the actual LVGL objects created by the EEZ-generated C code.
- */
-static product::ui::EezUiInstantiator s_ui;
+namespace {
 
-/*
- * Sming timer driving the demo LED animation.
- *
- * This timer does not run LVGL itself. It merely schedules our application
- * callback, which then updates a subset of the LED widgets under the LVGL
- * lock. LVGL's own handler loop is managed separately by `lvgl_runtime_adapter`.
- */
-static SimpleTimer s_led_chase_timer;
+using lightinator::ui::core::UiTheme;
+using lightinator::ui::core::TouchCalibrationCapture;
 
-/*
- * Animation state:
- * - `s_led_chase_step` is the phase accumulator for the color animation.
- * - `s_led_brightness_initialized` avoids repeatedly writing LED brightness,
- *   because only hue needs to change continuously.
- */
-static uint32_t s_led_chase_step = 0;
-static bool s_led_brightness_initialized = false;
-
-/*
- * LVGL asks the runtime adapter for touch state through a simple callback with
- * `(x, y) -> pressed` semantics. This adapter function keeps the application
- * side decoupled from LVGL internals and lets the GT911 driver expose a very
- * small polling API.
- */
-static bool app_touch_read(int16_t* x, int16_t* y)
+String colorToHexString(lv_color_t color)
 {
-    return touch_driver_gt911_read(x, y);
+    const uint32_t color32 = lv_color_to32(color);
+    char buf[8];
+    std::snprintf(buf, sizeof(buf), "#%02X%02X%02X",
+                  static_cast<unsigned>((color32 >> 16U) & 0xFFU),
+                  static_cast<unsigned>((color32 >> 8U) & 0xFFU),
+                  static_cast<unsigned>(color32 & 0xFFU));
+    return String(buf);
 }
 
-/*
- * We use one shared LVGL callback for all six color buttons.
- * `AppButtonId` is passed as LVGL user data so the callback can determine which
- * logical action to perform without having to create six separate handlers.
- */
-enum class AppButtonId {
-    Blue,
-    Red,
-    Green,
-    Teal,
-    Yellow,
-    Pink,
-};
-
-static const char* button_name(AppButtonId id)
+int fontSizeFromPtr(const lv_font_t* font)
 {
-    switch (id) {
-    case AppButtonId::Blue: return "Blue";
-    case AppButtonId::Red: return "Red";
-    case AppButtonId::Green: return "Green";
-    case AppButtonId::Teal: return "Teal";
-    case AppButtonId::Yellow: return "Yellow";
-    case AppButtonId::Pink: return "Pink";
-    default: return "Unknown";
-    }
+    if (font == &lv_font_montserrat_14) return 14;
+    if (font == &lv_font_montserrat_16) return 16;
+    if (font == &lv_font_montserrat_22) return 22;
+    if (font == &lv_font_montserrat_24) return 24;
+    if (font == &lv_font_montserrat_34) return 34;
+    if (font == &lv_font_montserrat_36) return 36;
+    return 16;
 }
 
-static lv_color_t button_color(AppButtonId id)
+String slugFromName(const String& name)
 {
-    switch (id) {
-    case AppButtonId::Blue: return lv_palette_main(LV_PALETTE_BLUE);
-    case AppButtonId::Red: return lv_palette_main(LV_PALETTE_RED);
-    case AppButtonId::Green: return lv_palette_main(LV_PALETTE_GREEN);
-    case AppButtonId::Teal: return lv_palette_main(LV_PALETTE_TEAL);
-    case AppButtonId::Yellow: return lv_palette_main(LV_PALETTE_YELLOW);
-    case AppButtonId::Pink: return lv_palette_main(LV_PALETTE_PINK);
-    default: return lv_color_white();
-    }
-}
-
-/*
- * Convenience helper used by button events.
- *
- * The generated connector exposes LEDs by stable widget IDs, so the app can
- * enumerate the LED widgets explicitly and update them in one place.
- */
-static void apply_color_to_all_leds(lv_color_t color)
-{
-    using WidgetId = product::ui::EezUiConnector::WidgetId;
-
-    static constexpr WidgetId kLedIds[] = {
-        WidgetId::LED1,
-        WidgetId::LED2,
-        WidgetId::LED3,
-        WidgetId::LED4,
-        WidgetId::LED5,
-        WidgetId::LED6,
-        WidgetId::LED7,
-        WidgetId::LED8,
-        WidgetId::LED9,
-    };
-
-    auto& ui = s_ui.ui();
-    for (auto id : kLedIds) {
-        auto* led = ui.asLed(id);
-        if (!led || !led->isBound()) {
-            continue;
+    String out;
+    out.reserve(name.length());
+    bool prevUnderscore = false;
+    for (size_t i = 0; i < name.length(); ++i) {
+        const char c = name[i];
+        if (std::isalnum(static_cast<unsigned char>(c))) {
+            out += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            prevUnderscore = false;
+        } else if (!prevUnderscore) {
+            out += '_';
+            prevUnderscore = true;
         }
-        led->setColor(color);
-        led->setBrightness(255);
     }
+    out.trim();
+    while (out.startsWith("_")) {
+        out.remove(0, 1);
+    }
+    while (out.endsWith("_")) {
+        out.remove(out.length() - 1, 1);
+    }
+    if (out.length() == 0) {
+        out = "custom_theme";
+    }
+    return out;
 }
 
-/*
- * Shared LVGL event callback for the color buttons.
- *
- * This runs in LVGL's event context, so it can directly manipulate widgets.
- * Current behavior is intentionally simple for demonstration purposes:
- * - stop the autonomous animation
- * - paint all LEDs in the color associated with the clicked button
- * - log the interaction
- */
-static void on_button_event(lv_event_t* event)
+bool saveThemeSchema(UiTheme theme)
 {
-    if (lv_event_get_code(event) != LV_EVENT_CLICKED) {
-        return;
+    if (!s_cfg || !s_data) {
+        return false;
     }
-
-    auto* id = static_cast<AppButtonId*>(lv_event_get_user_data(event));
-    if (id == nullptr) {
-        return;
+    theme.name.trim();
+    if (theme.name.length() == 0) {
+        return false;
     }
+    theme.id = slugFromName(theme.name);
 
-    s_led_chase_timer.stop();
-    s_led_brightness_initialized = true;
-    apply_color_to_all_leds(button_color(*id));
-    ESP_LOGI(TAG, "%s button clicked", button_name(*id));
-}
-
-/*
- * Register application behavior against generated widgets.
- *
- * The generated wrappers already know how to bind to the concrete LVGL button
- * objects. We attach one callback per button and identify the source through
- * the stable `AppButtonId` values passed as user data.
- */
-static void register_button_callbacks()
-{
-    auto& ui = s_ui.ui();
-
-    static AppButtonId blueId = AppButtonId::Blue;
-    static AppButtonId redId = AppButtonId::Red;
-    static AppButtonId greenId = AppButtonId::Green;
-    static AppButtonId tealId = AppButtonId::Teal;
-    static AppButtonId yellowId = AppButtonId::Yellow;
-    static AppButtonId pinkId = AppButtonId::Pink;
-
-    ui.blue_button().addCallback(on_button_event, LV_EVENT_CLICKED, &blueId);
-    ui.red_button().addCallback(on_button_event, LV_EVENT_CLICKED, &redId);
-    ui.green_button().addCallback(on_button_event, LV_EVENT_CLICKED, &greenId);
-    ui.teal_buton().addCallback(on_button_event, LV_EVENT_CLICKED, &tealId);
-    ui.yellow_button().addCallback(on_button_event, LV_EVENT_CLICKED, &yellowId);
-    ui.pink_button().addCallback(on_button_event, LV_EVENT_CLICKED, &pinkId);
-}
-
-/*
- * Periodic demo animation.
- *
- * Visual model:
- * - all 9 LEDs represent a hue wheel
- * - each LED is offset by 360/9 degrees
- * - only one third of the LEDs are updated per tick to keep CPU usage lower
- *
- * Concurrency model:
- * - the callback is triggered by Sming's timer system
- * - because it is not an LVGL event callback, it must acquire the LVGL lock
- *   before touching any widget
- */
-static void led_chase_tick()
-{
-    using WidgetId = product::ui::EezUiConnector::WidgetId;
-
-    static constexpr WidgetId kLedIds[] = {
-        WidgetId::LED1,
-        WidgetId::LED2,
-        WidgetId::LED3,
-        WidgetId::LED4,
-        WidgetId::LED5,
-        WidgetId::LED6,
-        WidgetId::LED7,
-        WidgetId::LED8,
-        WidgetId::LED9,
-    };
-
-    /* Advance the whole wheel by 6 degrees per app tick. */
-    static constexpr uint16_t kHueStepDegrees = 6;
-    /* Neighboring LEDs are evenly distributed around the hue circle. */
-    static constexpr uint16_t kPhaseOffsetDegrees = 360 / 9;
-    static constexpr uint8_t kSaturation = 100;
-    static constexpr uint8_t kValue = 100;
-    static constexpr uint8_t kBrightness = 255;
-    /* Update LEDs in 3 interleaved groups to reduce redraw load per tick. */
-    static constexpr size_t kUpdateGroups = 3;
-
-    lvgl_runtime_adapter_lock();
-
-    auto& ui = s_ui.ui();
-    const uint16_t baseHue = static_cast<uint16_t>((s_led_chase_step * kHueStepDegrees) % 360);
-
-    /* Brightness is static for this demo, so initialize it once. */
-    if (!s_led_brightness_initialized) {
-        for (size_t i = 0; i < sizeof(kLedIds) / sizeof(kLedIds[0]); ++i) {
-            auto* led = ui.asLed(kLedIds[i]);
-            if (!led || !led->isBound()) {
-                continue;
+    AppData::Root dataRoot(*s_data);
+    if (auto update = dataRoot.update()) {
+        auto& themes = update.themes;
+        unsigned existingIndex = themes.getItemCount();
+        for (unsigned i = 0; i < themes.getItemCount(); ++i) {
+            const auto item = themes[i];
+            if (item.getId() == theme.id || item.getName() == theme.name) {
+                existingIndex = i;
+                break;
             }
-            led->setBrightness(kBrightness);
         }
-        s_led_brightness_initialized = true;
+
+        auto item = (existingIndex < themes.getItemCount()) ? themes[existingIndex] : themes.addItem();
+        item.setId(theme.id);
+        item.setName(theme.name);
+        item.setMode(theme.mode.equalsIgnoreCase("light") ? 0 : 1);
+        item.setHeaderHeight(static_cast<int32_t>(theme.headerHeight));
+
+        item.colors.setHeaderBg(colorToHexString(theme.colors.headerBg));
+        item.colors.setHeaderFg(colorToHexString(theme.colors.headerFg));
+        item.colors.setContentBg(colorToHexString(theme.colors.contentBg));
+        item.colors.setContentFg(colorToHexString(theme.colors.contentFg));
+        item.colors.setButtonBg(colorToHexString(theme.colors.buttonBg));
+        item.colors.setButtonFg(colorToHexString(theme.colors.buttonFg));
+        item.colors.setShadow(colorToHexString(theme.colors.shadow));
+        item.colors.setDangerBg(colorToHexString(theme.colors.dangerBg));
+        item.colors.setDangerFg(colorToHexString(theme.colors.dangerFg));
+
+        item.fonts.setHeader(fontSizeFromPtr(theme.fonts.header));
+        item.fonts.setSubheader(fontSizeFromPtr(theme.fonts.subheader));
+        item.fonts.setContentHeader(fontSizeFromPtr(theme.fonts.contentHeader));
+        item.fonts.setContentSubheader(fontSizeFromPtr(theme.fonts.contentSubheader));
+        item.fonts.setContent(fontSizeFromPtr(theme.fonts.content));
+    } else {
+        return false;
     }
 
-    /* Only one group is recolored on each tick. */
-    const size_t group = s_led_chase_step % kUpdateGroups;
-    for (size_t i = group; i < sizeof(kLedIds) / sizeof(kLedIds[0]); i += kUpdateGroups) {
-        auto* led = ui.asLed(kLedIds[i]);
-        if (!led || !led->isBound()) {
-            continue;
-        }
-        const uint16_t hue = static_cast<uint16_t>((baseHue + (i * kPhaseOffsetDegrees)) % 360);
-        led->setColor(lv_color_hsv_to_rgb(hue, kSaturation, kValue));
+    AppConfig::Root configRoot(*s_cfg);
+    if (auto cfgUpdate = configRoot.update()) {
+        cfgUpdate.setActiveTheme(theme.id);
+    } else {
+        return false;
     }
 
-    lvgl_runtime_adapter_unlock();
-    ++s_led_chase_step;
+    s_ui.setTheme(theme);
+    return true;
 }
 
-/*
- * Sming boot entrypoint.
- *
- * Startup sequence:
- * 1. Enable panel backlight so the screen is visible.
- * 2. Initialize the display driver and LVGL runtime.
- * 3. Initialize the GT911 touch controller and register the touch callback.
- * 4. Initialize the generated EEZ UI and bind wrappers to live LVGL objects.
- * 5. Attach application callbacks to buttons.
- * 6. Start the demo LED animation timer.
- *
- * At the end of `init()` the system is event-driven:
- * - LVGL handler task keeps widgets alive and dispatches touch/events.
- * - Sming timer updates the LEDs periodically.
- * - Button presses arrive as LVGL events and are routed through
- *   `on_button_event()`.
- */
+bool setActiveThemeId(const String& themeId)
+{
+    if (!s_cfg || themeId.length() == 0) {
+        return false;
+    }
+
+    AppConfig::Root configRoot(*s_cfg);
+    if (auto cfgUpdate = configRoot.update()) {
+        cfgUpdate.setActiveTheme(themeId);
+        return true;
+    }
+    return false;
+}
+
+std::vector<UiTheme> loadThemeSchemas()
+{
+    // Start with built-in themes (flash JSON, always present).
+    std::vector<UiTheme> out = loadBuiltinThemes();
+
+    if (!s_data) {
+        return out;
+    }
+
+    // Overlay with user-edited themes from ConfigDB.
+    // A ConfigDB entry with a matching id replaces the built-in;
+    // entries with new ids are appended.
+    AppData::Root dataRoot(*s_data);
+    for (auto t : dataRoot.themes) {
+        UiTheme theme = lightinator::ui::core::nordicDarkTheme();
+        theme.id           = t.getId();
+        theme.name         = t.getName();
+        theme.mode         = (t.getMode() == 0) ? "light" : "dark";
+        theme.headerHeight = static_cast<lv_coord_t>(t.getHeaderHeight());
+        theme.colors.headerBg  = lightinator::ui::core::colorFromHexString(t.colors.getHeaderBg(),  theme.colors.headerBg);
+        theme.colors.headerFg  = lightinator::ui::core::colorFromHexString(t.colors.getHeaderFg(),  theme.colors.headerFg);
+        theme.colors.contentBg = lightinator::ui::core::colorFromHexString(t.colors.getContentBg(), theme.colors.contentBg);
+        theme.colors.contentFg = lightinator::ui::core::colorFromHexString(t.colors.getContentFg(), theme.colors.contentFg);
+        theme.colors.buttonBg  = lightinator::ui::core::colorFromHexString(t.colors.getButtonBg(),  theme.colors.buttonBg);
+        theme.colors.buttonFg  = lightinator::ui::core::colorFromHexString(t.colors.getButtonFg(),  theme.colors.buttonFg);
+        theme.colors.shadow    = lightinator::ui::core::colorFromHexString(t.colors.getShadow(),    theme.colors.shadow);
+        theme.colors.dangerBg  = lightinator::ui::core::colorFromHexString(t.colors.getDangerBg(),  theme.colors.dangerBg);
+        theme.colors.dangerFg  = lightinator::ui::core::colorFromHexString(t.colors.getDangerFg(),  theme.colors.dangerFg);
+        theme.fonts.header           = lightinator::ui::core::montserratFont(t.fonts.getHeader());
+        theme.fonts.subheader        = lightinator::ui::core::montserratFont(t.fonts.getSubheader());
+        theme.fonts.contentHeader    = lightinator::ui::core::montserratFont(t.fonts.getContentHeader());
+        theme.fonts.contentSubheader = lightinator::ui::core::montserratFont(t.fonts.getContentSubheader());
+        theme.fonts.content          = lightinator::ui::core::montserratFont(t.fonts.getContent());
+
+        // Replace matching built-in, or append as a new user theme.
+        auto it = std::find_if(out.begin(), out.end(),
+            [&](const UiTheme& b) { return b.id == theme.id; });
+        if (it != out.end()) {
+            *it = theme;
+        } else {
+            out.push_back(theme);
+        }
+    }
+
+    return out;
+}
+
+} // namespace
+
 void init()
 {
     ESP_LOGI(TAG, "=== init() start ===");
 
-    backlight_on();
+    auto part = Storage::findPartition(F("lfs"));
+    if(part) {
+        if(lfs_mount(part)) {
+            fsMounted = true;
+        } 
+    }
 
-    if (esp_lcd_adapter_init(WIDTH, HEIGHT) != ESP_OK) {
-        ESP_LOGE(TAG, "esp_lcd_adapter_init FAILED");
+    // Compose application modules.
+    s_cfg       = std::make_unique<AppConfig>("app-config");
+    s_data      = std::make_unique<AppData>("app-data");
+
+    // Load active theme from ConfigDB, falling back to built-in Nordic Dark.
+    {
+        using namespace lightinator::ui::core;
+        UiTheme theme = nordicDarkTheme();
+        AppConfig::Root cfgRoot(*s_cfg);
+        String activeId = cfgRoot.getActiveTheme();
+        if (activeId.length() != 0) {
+            const auto allThemes = loadThemeSchemas();
+            for (const auto& candidate : allThemes) {
+                if (candidate.id == activeId) {
+                    theme = candidate;
+                    break;
+                }
+            }
+        }
+        s_ui.setTheme(theme);
+    }
+    s_ui.setOnThemeSaveRequested([](const UiTheme& theme) {
+        return saveThemeSchema(theme);
+    });
+    s_ui.setOnThemeListRequested([]() {
+        return loadThemeSchemas();
+    });
+    s_ui.setOnThemeApplyRequested([](const UiTheme& theme) {
+        setActiveThemeId(theme.id);
+    });
+    s_ui.setOnSettingsLoadRequested([](int& brightness, int& timeout) {
+        lightinator::loadUiSettings(s_cfg.get(), brightness, timeout);
+    });
+    s_ui.setOnSettingsSaveRequested([](int brightness, int timeout) {
+        return lightinator::saveDisplaySettings(s_cfg.get(), s_hw, brightness, timeout);
+    });
+    s_ui.setOnBrightnessPreviewRequested([](int brightness) {
+        lightinator::previewBacklightBrightness(s_hw, brightness);
+    });
+    s_ui.setOnTouchCalibrationSaveRequested([](const TouchCalibrationCapture& capture) {
+        return lightinator::saveTouchCalibration(s_cfg.get(), s_hw, capture);
+    });
+
+    s_wifi      = std::make_unique<AppWIFI>(*s_cfg);
+    s_wifi_flow = std::make_unique<lightinator::ui::WifiConfigFlow>(s_ui, *s_wifi);
+    s_net_ui_binder = std::make_unique<lightinator::NetworkUiBinder>(
+        s_ui, *s_wifi, s_wifi_flow.get(), s_ui_runtime);
+
+    const lightinator::DisplaySettings displaySettings = lightinator::loadDisplaySettings(s_cfg.get());
+    lightinator::HardwareInitOptions hwOptions = {};
+    hwOptions.brightnessPercent = displaySettings.brightness;
+    hwOptions.backlightTimeoutSeconds = displaySettings.timeout;
+    hwOptions.touchStablePressMs = displaySettings.touchStablePressMs;
+    hwOptions.touchCalibration = displaySettings.calibration;
+
+    // Bring up hardware (backlight, display, touch).
+    const auto caps = s_hw.init(hwOptions);
+    if (!caps.displayOk) {
+        ESP_LOGE(TAG, "Hardware init failed — display not ready");
         return;
     }
-    ESP_LOGI(TAG, "Display + LVGL ready");
 
-    /*
-     * Touch transform values describe how raw controller coordinates map onto
-     * the display orientation currently used by the panel.
-     */
-    const touch_driver_gt911_config_t touch_cfg = {
-        .i2c_port = 0,
-        .sda_gpio = TOUCH_SDA_GPIO,
-        .scl_gpio = TOUCH_SCL_GPIO,
-        .int_gpio = GPIO_NUM_NC,
-        .rst_gpio = GPIO_NUM_NC,
-        .width = WIDTH,
-        .height = HEIGHT,
-        .mirror_x = false,
-        .mirror_y = false,
-        .swap_xy = false,
-        .i2c_clock_hz = 400000,
-    };
-    if (touch_driver_gt911_init(&touch_cfg) == ESP_OK) {
-        lvgl_runtime_adapter_set_touch_cb(app_touch_read);
-        ESP_LOGI(TAG, "GT911 touch ready");
-    } else {
-        ESP_LOGW(TAG, "GT911 touch init failed; continuing without touch");
+    // Initialise LVGL UI under lock.
+    s_ui_runtime.runOnUiThread([&]() {
+        if (!s_ui.init()) {
+            ESP_LOGE(TAG, "UI init failed");
+        }
+    });
+
+    // Register WiFi->UI callbacks, start networking, sync initial state.
+    s_net_ui_binder->bind();
+    s_wifi->init();
+    s_ui_runtime.runOnUiThread([&]() { s_net_ui_binder->syncState(); });
+
+    if (s_wifi_flow) {
+        s_wifi_flow->startIfNeeded();
     }
 
-    /*
-     * UI creation and callback registration both touch LVGL objects, so they
-     * must happen while holding the LVGL lock.
-     */
-    lvgl_runtime_adapter_lock();
-    if (!s_ui.init()) {
-        ESP_LOGE(TAG, "UI instantiator init failed");
-        lvgl_runtime_adapter_unlock();
-        return;
-    }
-    register_button_callbacks();
-    lvgl_runtime_adapter_unlock();
-
-    s_led_chase_timer.initializeMs(180, led_chase_tick).start();
-    ESP_LOGI(TAG, "LED chase timer started");
+    // Start UI runtime lifecycle.
+    s_ui_runtime.start();
 
     ESP_LOGI(TAG, "=== init() complete ===");
 }
+

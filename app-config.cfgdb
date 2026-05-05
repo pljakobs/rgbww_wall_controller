@@ -1,0 +1,373 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "store":true,
+  "properties": {
+    "ota":{
+      "type":"object",
+      "properties":{
+        "url":{
+          "type":"string",
+          "default":"http://lightinator.de/version.json"
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "api_secured": {
+          "type": "boolean",
+          "default":false
+        },
+        "api_password": {
+          "type":"string"
+        }
+      }
+    },
+    "network": {
+      "type": "object",
+      "store":true,
+      "properties": {
+        "mqtt": {
+          "type": "object",
+          "properties": {
+            "server": {
+              "type": "string",
+              "default":"mqtt.local"
+            },
+            "password": {
+              "type": "string",
+              "default":""
+            },
+            "port": {
+              "type": "integer",
+              "default":1883
+            },
+            "topic_base": {
+              "type": "string",
+              "default":"home/"
+            },
+            "enabled": {
+              "type": "boolean",
+              "default":false
+            },
+            "username": {
+              "type": "string",
+              "default":""
+            },
+            "homeassistant": {
+              "type":"object",
+              "properties":{
+                "enable": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "discovery_prefix": {
+                  "type": "string",
+                  "default": "homeassistant"
+                },
+                "node_id": {
+                  "type": "string",
+                  "default": ""  
+                }
+              }
+            }
+          }
+        },
+        "ntp":{
+          "type":"object",
+          "properties":{
+            "enabled":{
+              "type":"boolean",
+              "default":false
+            },
+            "server":{
+              "type":"string",
+              "default":"pool.ntp.org"
+            },
+            "interval":{
+              "type":"integer",
+              "default":3600
+            }
+          }
+        },
+        "connection": {
+          "type": "object",
+          "properties": {
+            "netmask": {
+              "type": "string",
+              "default":"255.255.255.0"
+            },
+            "ip": {
+              "type": "string",
+              "default":"192.168.1.1"
+            },
+            "dhcp": {
+              "type": "boolean",
+              "default":true
+            },
+            "gateway": {
+              "type": "string",
+              "default":"192.168.1.255"
+            }
+          }
+        },
+        "ap": {
+          "type": "object",
+          "properties": {
+            "password": {
+              "type": "string",
+              "default":"configesp"
+            },
+            "secured": {
+              "type": "boolean",
+              "default":true
+            },
+            "ssid": {
+              "type": "string"
+            }
+          }
+        },
+        "mdns":{
+          "type":"object",
+          "properties":{
+            "enabled":{
+              "type":"boolean",
+              "default":true
+            },
+            "name":{
+              "type":"string"
+            }
+          }
+        },
+        "rsyslog":{
+          "type":"object",
+          "properties":{
+            "enabled":{
+              "type":"boolean",
+              "default": false
+            },
+            "host":{
+              "type":"string"
+            },
+            "port":{
+              "type":"integer",
+              "default":514
+            }
+          }
+        },
+        "telemetry": {
+          "type": "object",
+          "properties": {
+            "statsEnabled": {
+              "type":"boolean",
+              "@default":"False if SMING_RELEASE else True"
+            },
+            "logEnabled": {
+              "type":"boolean",
+              "default":false
+          },
+            "url": {
+              "type": "string",
+              "default":"lightinator.de:1883"
+            },
+            "user": {
+              "type": "string",
+              "default":"rgbww"
+            },
+            "password": {
+              "type": "string",
+              "default":"rgbwwdebug"
+            },
+            "numReboots": {
+              "type": "integer",
+              "default":0
+            }
+          }
+        }
+      }
+    },
+    "active_theme": {
+      "type": "string"
+    },
+    "display": {
+      "type": "object",
+      "properties": {
+        "brightness": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 80
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": -1,
+          "maximum": 600,
+          "default": 30
+        },
+        "touch_stable_press_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 50
+        },
+        "touch_calibration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "screen",
+            "matrix",
+            "points"
+          ],
+          "properties": {
+            "screen": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["width", "height"],
+              "properties": {
+                "width": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 480
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 480
+                }
+              }
+            },
+            "matrix": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "a": { "type": "number", "default": 1 },
+                "b": { "type": "number", "default": 0 },
+                "c": { "type": "number", "default": 0 },
+                "d": { "type": "number", "default": 0 },
+                "e": { "type": "number", "default": 1 },
+                "f": { "type": "number", "default": 0 }
+              }
+            },
+            "points": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "p1": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "reference": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 40 },
+                        "y": { "type": "integer", "default": 40 }
+                      }
+                    },
+                    "raw": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 0 },
+                        "y": { "type": "integer", "default": 0 }
+                      }
+                    }
+                  }
+                },
+                "p2": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "reference": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 440 },
+                        "y": { "type": "integer", "default": 40 }
+                      }
+                    },
+                    "raw": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 0 },
+                        "y": { "type": "integer", "default": 0 }
+                      }
+                    }
+                  }
+                },
+                "p3": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "reference": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 440 },
+                        "y": { "type": "integer", "default": 440 }
+                      }
+                    },
+                    "raw": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 0 },
+                        "y": { "type": "integer", "default": 0 }
+                      }
+                    }
+                  }
+                },
+                "p4": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "reference": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 40 },
+                        "y": { "type": "integer", "default": 440 }
+                      }
+                    },
+                    "raw": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 0 },
+                        "y": { "type": "integer", "default": 0 }
+                      }
+                    }
+                  }
+                },
+                "p5": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "reference": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 240 },
+                        "y": { "type": "integer", "default": 240 }
+                      }
+                    },
+                    "raw": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": { "type": "integer", "default": 0 },
+                        "y": { "type": "integer", "default": 0 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

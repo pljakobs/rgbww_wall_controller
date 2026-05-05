@@ -88,8 +88,8 @@ DEFINE_FSTR_LOCAL(kPinkJson,
     "\"colors\":{"
         "\"headerBg\":\"#AD1457\",\"headerFg\":\"#FCE4EC\","
         "\"contentBg\":\"#1A1718\",\"contentFg\":\"#F8BBD0\","
-        "\"buttonBg\":\"#FF4081\",\"buttonFg\":\"#F8BBD0\","
-        "\"shadow\":\"#400725\",\"dangerBg\":\"#F50057\",\"dangerFg\":\"#FF80AB\"},"
+        "\"buttonBg\":\"#FF4081\",\"buttonFg\":\"#443239\","
+        "\"shadow\":\"#400725\",\"dangerBg\":\"#F50057\",\"dangerFg\":\"#2a151c\"},"
     "\"fonts\":{"
         "\"header\":36,\"subheader\":24,\"contentHeader\":22,"
         "\"contentSubheader\":16,\"content\":14}}"
@@ -101,8 +101,8 @@ DEFINE_FSTR_LOCAL(kPurpleJson,
     "\"colors\":{"
         "\"headerBg\":\"#6A1B9A\",\"headerFg\":\"#F3E5F5\","
         "\"contentBg\":\"#191718\",\"contentFg\":\"#E1BEE7\","
-        "\"buttonBg\":\"#E040FB\",\"buttonFg\":\"#E1BEE7\","
-        "\"shadow\":\"#220940\",\"dangerBg\":\"#D500F9\",\"dangerFg\":\"#EA80FC\"},"
+        "\"buttonBg\":\"#E040FB\",\"buttonFg\":\"#2e272f\","
+        "\"shadow\":\"#220940\",\"dangerBg\":\"#D500F9\",\"dangerFg\":\"#1c101f\"},"
     "\"fonts\":{"
         "\"header\":36,\"subheader\":24,\"contentHeader\":22,"
         "\"contentSubheader\":16,\"content\":14}}"
@@ -278,6 +278,34 @@ DEFINE_FSTR_LOCAL(kDeepOrangeJson,
 )
 
 // ---------------------------------------------------------------------------
+// Contrast helpers — ensure fg is always ≥50 HSV-value units away from bg.
+//
+// bg.v < 50 (dark bg)  → fg.v = max(bg.v+50, 100-bg.v)  — picks brighter fg
+// bg.v > 50 (light bg) → fg.v = min(bg.v-50, 100-bg.v)  — picks darker fg
+// ---------------------------------------------------------------------------
+
+static uint8_t contrastingValue(uint8_t bgV)
+{
+    if (bgV < 50) {
+        const uint8_t a = bgV + 50;       // [50, 99]
+        const uint8_t b = 100 - bgV;      // [51, 100]
+        return a > b ? a : b;
+    }
+    // bgV >= 50: want dark fg
+    const uint8_t a = bgV - 50;           // [0, 50]
+    const uint8_t b = 100 - bgV;          // [0, 50]
+    return a < b ? a : b;
+}
+
+static lv_color_t adjustFgContrast(lv_color_t fg, lv_color_t bg)
+{
+    const lv_color_hsv_t bgHsv = lv_color_to_hsv(bg);
+    lv_color_hsv_t fgHsv = lv_color_to_hsv(fg);
+    fgHsv.v = contrastingValue(bgHsv.v);
+    return lv_color_hsv_to_rgb(fgHsv.h, fgHsv.s, fgHsv.v);
+}
+
+// ---------------------------------------------------------------------------
 // Parser — copies flash string to RAM, then deserialises with ArduinoJson 6.
 // ---------------------------------------------------------------------------
 
@@ -308,6 +336,12 @@ static UiTheme parseThemeJson(const FSTR::String& fstr)
         t.colors.shadow    = colorFromHexString(colors["shadow"]    | "", t.colors.shadow);
         t.colors.dangerBg  = colorFromHexString(colors["dangerBg"]  | "", t.colors.dangerBg);
         t.colors.dangerFg  = colorFromHexString(colors["dangerFg"]  | "", t.colors.dangerFg);
+
+        // Enforce ≥50 HSV-value contrast between each bg/fg pair
+        t.colors.headerFg  = adjustFgContrast(t.colors.headerFg,  t.colors.headerBg);
+        t.colors.contentFg = adjustFgContrast(t.colors.contentFg, t.colors.contentBg);
+        t.colors.buttonFg  = adjustFgContrast(t.colors.buttonFg,  t.colors.buttonBg);
+        t.colors.dangerFg  = adjustFgContrast(t.colors.dangerFg,  t.colors.dangerBg);
     }
 
     JsonObjectConst fonts = doc["fonts"];

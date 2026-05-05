@@ -258,7 +258,7 @@ void MainScreen::showBurgerMenu()
         lv_obj_set_style_bg_opa(btn, LV_OPA_TRANSP, 0);
         lv_obj_set_style_bg_color(btn, theme_.colors.headerBg, LV_STATE_PRESSED);
         lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, LV_STATE_PRESSED);
-        lv_obj_set_style_text_font(btn, theme_.fonts.contentSubheader, 0);
+        lv_obj_set_style_text_font(btn, theme_.fonts.contentHeader, 0);
         lv_obj_set_style_text_color(btn, theme_.colors.buttonFg, 0);
         lv_obj_set_style_pad_left(btn, 16, 0);
         lv_obj_set_style_pad_right(btn, 16, 0);

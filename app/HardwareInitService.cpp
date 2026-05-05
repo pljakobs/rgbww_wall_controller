@@ -18,6 +18,9 @@ static constexpr ledc_timer_t BACKLIGHT_LEDC_TIMER = LEDC_TIMER_0;
 static constexpr ledc_channel_t BACKLIGHT_LEDC_CHANNEL = LEDC_CHANNEL_0;
 static constexpr ledc_timer_bit_t BACKLIGHT_LEDC_RESOLUTION = LEDC_TIMER_13_BIT;
 static constexpr uint32_t BACKLIGHT_LEDC_MAX_DUTY = (1U << BACKLIGHT_LEDC_RESOLUTION) - 1U;
+static constexpr uint32_t BACKLIGHT_FADE_UP_MS = 250;
+static constexpr uint32_t BACKLIGHT_FADE_DOWN_MS = 2000;
+static constexpr uint32_t DIMMED_DUTY_PERCENT = 50;
 static constexpr uint16_t   DISPLAY_WIDTH   = 480;
 static constexpr uint16_t   DISPLAY_HEIGHT  = 480;
 static constexpr gpio_num_t TOUCH_SDA_GPIO  = GPIO_NUM_19;
@@ -74,6 +77,7 @@ HardwareCapabilities HardwareInitService::init(const HardwareInitOptions& option
     brightnessPercent_ = options.brightnessPercent;
     backlightTimeoutSeconds_ = options.backlightTimeoutSeconds;
     backlightAwake_ = true;
+    backlightDimmed_ = false;
     swallowWakeTouch_ = false;
     lastTouchUs_ = esp_timer_get_time();
 
@@ -103,6 +107,12 @@ HardwareCapabilities HardwareInitService::init(const HardwareInitOptions& option
         ESP_LOGE(HW_TAG, "backlight channel init failed");
         return caps;
     }
+
+    if (ledc_fade_func_install(0) != ESP_OK) {
+        ESP_LOGE(HW_TAG, "backlight fade func install failed");
+        return caps;
+    }
+
     applyBacklightOutput(true);
 
     if (esp_lcd_adapter_init(DISPLAY_WIDTH, DISPLAY_HEIGHT) != ESP_OK) {
@@ -168,8 +178,9 @@ void HardwareInitService::setBacklightTimeoutSeconds(int timeoutSeconds)
 {
     backlightTimeoutSeconds_ = timeoutSeconds;
     lastTouchUs_ = esp_timer_get_time();
-    if (!backlightAwake_) {
+    if (!backlightAwake_ || backlightDimmed_) {
         backlightAwake_ = true;
+        backlightDimmed_ = false;
         swallowWakeTouch_ = false;
         applyBacklightOutput(true);
     }
@@ -193,17 +204,18 @@ bool HardwareInitService::readTouch(int16_t* x, int16_t* y)
         return false;
     }
 
-    if (backlightTimeoutSeconds_ >= 0 && backlightAwake_ && !pressed && lastTouchUs_ > 0) {
+    if (backlightTimeoutSeconds_ >= 0 && backlightAwake_ && !backlightDimmed_ && !pressed && lastTouchUs_ > 0) {
         const int64_t timeoutUs = static_cast<int64_t>(backlightTimeoutSeconds_) * 1000000LL;
         if ((nowUs - lastTouchUs_) >= timeoutUs) {
-            backlightAwake_ = false;
-            applyBacklightOutput(false);
+            backlightDimmed_ = true;
+            applyBacklightDimmed();
         }
     }
 
-    if (!backlightAwake_) {
+    if (!backlightAwake_ || backlightDimmed_) {
         if (pressed) {
             backlightAwake_ = true;
+            backlightDimmed_ = false;
             swallowWakeTouch_ = true;
             lastTouchUs_ = nowUs;
             applyBacklightOutput(true);
@@ -221,9 +233,17 @@ bool HardwareInitService::readTouch(int16_t* x, int16_t* y)
 
 void HardwareInitService::applyBacklightOutput(bool enabled)
 {
-    const uint32_t duty = enabled ? brightnessToDuty(brightnessPercent_) : 0;
-    ledc_set_duty(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL, duty);
-    ledc_update_duty(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL);
+    const uint32_t targetDuty = enabled ? brightnessToDuty(brightnessPercent_) : 0;
+    ledc_set_fade_with_time(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL, targetDuty, BACKLIGHT_FADE_UP_MS);
+    ledc_fade_start(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL, LEDC_FADE_NO_WAIT);
+}
+
+void HardwareInitService::applyBacklightDimmed()
+{
+    // Fade to 50% of current brightness (dimmed state) over 250ms
+    const uint32_t dimmedDuty = brightnessToDuty(DIMMED_DUTY_PERCENT);
+    ledc_set_fade_with_time(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL, dimmedDuty, BACKLIGHT_FADE_DOWN_MS);
+    ledc_fade_start(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL, LEDC_FADE_NO_WAIT);
 }
 
 } // namespace lightinator

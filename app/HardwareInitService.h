@@ -48,10 +48,12 @@ public:
 
 private:
     void applyBacklightOutput(bool enabled);
+    void applyBacklightDimmed();
 
     int brightnessPercent_ = 80;
     int backlightTimeoutSeconds_ = 30;
     bool backlightAwake_ = true;
+    bool backlightDimmed_ = false;
     bool swallowWakeTouch_ = false;
     int64_t lastTouchUs_ = 0;
     bool touchInitialized_ = false;

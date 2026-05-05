@@ -10,6 +10,7 @@
 #include "ui/core/LvObjRef.h"
 #include "ui/core/Screen.h"
 #include "ui/core/UiTheme.h"
+#include "ui/AntaresImage.h"
 #include "ui/screens/DecoratedScreen.h"
 
 namespace lightinator::ui::screens {
@@ -19,7 +20,6 @@ public:
     explicit MainScreen(core::HsvColor color, const core::UiTheme& theme);
 
     void mount(lv_obj_t* parent) override;
-    void setColorPreview(core::HsvColor color);
 
     void setOnOpenColorPickerRequested(std::function<void()> callback);
     void setOnOpenNetworkInfoRequested(std::function<void()> callback);
@@ -29,7 +29,6 @@ public:
     void setWifiConnected(bool connected);
 
 private:
-    static void onOpenButtonEvent(lv_event_t* event);
     static void onMenuThemeEvent(lv_event_t* event);
     static void onMenuColorPickerEvent(lv_event_t* event);
     static void onMenuNetworkInfoEvent(lv_event_t* event);
@@ -52,12 +51,9 @@ private:
 
     core::LvObjRef burgerMenuOverlay_;
     core::LvObjRef burgerMenuPanel_;
+    core::LvObjRef backgroundImage_;
 
     std::unique_ptr<DecoratedScreen> decorated_;
-    std::unique_ptr<lvgl::widget::Object> bodyLayout_;
-    std::unique_ptr<lvgl::widget::Object> previewSwatch_;
-    std::unique_ptr<lvgl::widget::Label> previewLabel_;
-    std::unique_ptr<lvgl::widget::Button> openButton_;
 };
 
 } // namespace lightinator::ui::screens

@@ -13,6 +13,7 @@
 #include "ui/screens/MainScreen.h"
 #include "ui/screens/NetworkInfoScreen.h"
 #include "ui/screens/ThemePreviewScreen.h"
+#include "ui/screens/ThemeSelectorScreen.h"
 #include "ui/screens/WifiConfigScreen.h"
 #include "ui/screens/MenuTestScreen.h"
 
@@ -48,6 +49,15 @@ public:
     std::unique_ptr<screens::WifiConfigScreen> createWifiConfigScreen();
 
     std::unique_ptr<screens::ThemePreviewScreen> createThemePreviewScreen(
+        std::function<void()> onClose);
+
+    std::unique_ptr<screens::ThemeSelectorScreen> createThemeSelectorScreen(
+        std::function<void()> onClose,
+        std::function<void(const core::UiTheme&, const String&)> onEdit);
+
+    std::unique_ptr<screens::ThemePreviewScreen> createThemeEditorScreen(
+        const core::UiTheme& themeToEdit,
+        const String& suggestedName,
         std::function<void()> onClose);
 
     std::unique_ptr<screens::MenuTestScreen> createMenuTestScreen(

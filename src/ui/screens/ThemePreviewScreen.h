@@ -16,14 +16,13 @@ namespace lightinator::ui::screens {
 
 class ThemePreviewScreen : public core::Screen {
 public:
-    explicit ThemePreviewScreen(const core::UiTheme& theme);
+    ThemePreviewScreen(const core::UiTheme& theme, const String& suggestedName);
 
     void mount(lv_obj_t* parent) override;
     void applyLiveTheme(const core::UiTheme& theme);
 
     void setOnCloseRequested(std::function<void()> callback);
     void setOnSaveRequested(std::function<bool(const core::UiTheme&)> callback);
-    void setOnThemeListRequested(std::function<std::vector<core::UiTheme>()> callback);
     void setOnThemeApplyRequested(std::function<void(const core::UiTheme&)> callback);
 
 private:
@@ -33,7 +32,6 @@ private:
     static void onColorInputChanged(lv_event_t* event);
     static void onColorFieldClicked(lv_event_t* event);
     static void onFontDropdownChanged(lv_event_t* event);
-    static void onSchemeDropdownChanged(lv_event_t* event);
     static void onColorPickerCancelEvent(lv_event_t* event);
 
     bool collectThemeFromInputs(core::UiTheme& outTheme) const;
@@ -52,15 +50,12 @@ private:
                     lv_obj_t** sliderOut);
 
     core::UiTheme theme_;
+    String suggestedName_;
     std::function<void()> onCloseRequested_;
     std::function<bool(const core::UiTheme&)> onSaveRequested_;
-    std::function<std::vector<core::UiTheme>()> onThemeListRequested_;
     std::function<void(const core::UiTheme&)> onThemeApplyRequested_;
 
-    std::vector<core::UiTheme> availableThemes_;
-
     lv_obj_t* schemaNameField_ = nullptr;
-    lv_obj_t* schemeDropdown_ = nullptr;
     lv_obj_t* statusLabel_ = nullptr;
     lv_obj_t* keyboard_ = nullptr;
     lv_obj_t* colorPickerOverlay_ = nullptr;

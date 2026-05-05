@@ -312,6 +312,7 @@ static lv_color_t adjustFgContrast(lv_color_t fg, lv_color_t bg)
 static UiTheme parseThemeJson(const FSTR::String& fstr)
 {
     UiTheme t = nordicDarkTheme();
+    t.isBuiltin = true;
 
     String json = fstr; // copy from flash to RAM
 

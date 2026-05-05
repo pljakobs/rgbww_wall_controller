@@ -14,6 +14,7 @@
 #include "ui/screens/ColorPickerScreen.h"
 #include "ui/screens/NetworkInfoScreen.h"
 #include "ui/screens/ThemePreviewScreen.h"
+#include "ui/screens/ThemeSelectorScreen.h"
 #include "ui/screens/WifiConfigScreen.h"
 #include "ui/screens/MenuTestScreen.h"
 
@@ -40,6 +41,8 @@ public:
     void showWifiConfigScreen();
     void closeWifiConfigScreen();
     void showThemePreviewScreen();
+        void showThemeSelectorScreen();
+        void showThemeEditorScreen(const core::UiTheme& themeToEdit, const String& suggestedName);
     void showMenuTestScreen();
     void setTheme(const core::UiTheme& theme);
 
@@ -63,6 +66,8 @@ private:
         NetworkInfo,
         WifiConfig,
         ThemePreview,
+        ThemeSelector,
+        ThemeEditor,
         MenuTest,
     };
 
@@ -77,6 +82,8 @@ private:
     std::unique_ptr<screens::WifiConfigScreen>     wifiConfigScreen_;
     std::unique_ptr<screens::NetworkInfoScreen>    networkInfoScreen_;
     std::unique_ptr<screens::ThemePreviewScreen>   themePreviewScreen_;
+        std::unique_ptr<screens::ThemeSelectorScreen>  themeSelectorScreen_;
+        /// themePreviewScreen_ is reused as the editor in the new two-screen flow.
     std::unique_ptr<screens::MenuTestScreen>   menuTestScreen_;
 
     std::function<void(screens::NetworkInfoScreen*)> onNetworkInfoScreenChanged_;

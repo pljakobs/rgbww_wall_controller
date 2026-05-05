@@ -40,7 +40,7 @@ void AppNavigator::showMainScreen()
     mainScreen_ = factory_.createMainScreen(
         [this]() { showColorPickerScreen(); },
         [this]() { showNetworkInfoScreen(); },
-        [this]() { showThemePreviewScreen(); });
+        [this]() { showThemeSelectorScreen(); });
     mainScreen_->setOnOpenMenuTestRequested([this]() { showMenuTestScreen(); });
     mainScreen_->mount(root_);
 }
@@ -96,15 +96,41 @@ void AppNavigator::closeWifiConfigScreen()
 
 void AppNavigator::showThemePreviewScreen()
 {
-    activeScreen_ = ActiveScreen::ThemePreview;
+    showThemeSelectorScreen();
+}
+
+void AppNavigator::showThemeSelectorScreen()
+{
+    activeScreen_ = ActiveScreen::ThemeSelector;
     clearRoot();
     mainScreen_.reset();
     colorPickerScreen_.reset();
     wifiConfigScreen_.reset();
     networkInfoScreen_.reset();
+    themePreviewScreen_.reset();
     menuTestScreen_.reset();
-    themePreviewScreen_ = factory_.createThemePreviewScreen(
-        [this]() { showMainScreen(); });
+    themeSelectorScreen_ = factory_.createThemeSelectorScreen(
+        [this]() { showMainScreen(); },
+        [this](const core::UiTheme& t, const String& name) {
+            showThemeEditorScreen(t, name);
+        });
+    themeSelectorScreen_->mount(root_);
+}
+
+void AppNavigator::showThemeEditorScreen(const core::UiTheme& themeToEdit,
+                                          const String& suggestedName)
+{
+    activeScreen_ = ActiveScreen::ThemeEditor;
+    clearRoot();
+    mainScreen_.reset();
+    colorPickerScreen_.reset();
+    wifiConfigScreen_.reset();
+    networkInfoScreen_.reset();
+    themeSelectorScreen_.reset();
+    menuTestScreen_.reset();
+    themePreviewScreen_ = factory_.createThemeEditorScreen(
+        themeToEdit, suggestedName,
+        [this]() { showThemeSelectorScreen(); });
     themePreviewScreen_->mount(root_);
 }
 
@@ -158,6 +184,13 @@ void AppNavigator::setTheme(const core::UiTheme& theme)
         return;
     }
 
+    if (activeScreen_ == ActiveScreen::ThemeEditor) {
+        if (themePreviewScreen_) {
+            themePreviewScreen_->applyLiveTheme(theme);
+        }
+        return;
+    }
+
     remountActiveScreen();
 }
 
@@ -177,7 +210,15 @@ void AppNavigator::remountActiveScreen()
         showWifiConfigScreen();
         break;
     case ActiveScreen::ThemePreview:
-        showThemePreviewScreen();
+        showThemeSelectorScreen();
+        break;
+    case ActiveScreen::ThemeSelector:
+        showThemeSelectorScreen();
+        break;
+    case ActiveScreen::ThemeEditor:
+        // Editor can't be remounted generically (needs theme + suggestedName);
+        // fall back to selector.
+        showThemeSelectorScreen();
         break;
     case ActiveScreen::MenuTest:
         showMenuTestScreen();

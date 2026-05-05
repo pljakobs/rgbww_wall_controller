@@ -30,6 +30,7 @@ struct UiTheme {
     String         name;
     String         mode         = "dark";
     lv_coord_t     headerHeight = 60;
+    bool           isBuiltin    = false;  ///< true for flash-stored built-in themes
     UiThemeColors  colors;
     UiThemeFonts   fonts;
 };

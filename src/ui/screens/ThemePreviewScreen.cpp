@@ -117,7 +117,8 @@ lv_color_t toLvColor(const lightinator::ui::core::HsvColor& color)
 namespace lightinator::ui::screens {
 
 ThemePreviewScreen::ThemePreviewScreen(const core::UiTheme& theme)
-    : theme_(theme)
+ThemePreviewScreen::ThemePreviewScreen(const core::UiTheme& theme, const String& suggestedName)
+    : theme_(theme), suggestedName_(suggestedName)
 {
 }
 
@@ -148,11 +149,6 @@ void ThemePreviewScreen::setOnCloseRequested(std::function<void()> callback)
 void ThemePreviewScreen::setOnSaveRequested(std::function<bool(const core::UiTheme&)> callback)
 {
     onSaveRequested_ = std::move(callback);
-}
-
-void ThemePreviewScreen::setOnThemeListRequested(std::function<std::vector<core::UiTheme>()> callback)
-{
-    onThemeListRequested_ = std::move(callback);
 }
 
 void ThemePreviewScreen::setOnThemeApplyRequested(std::function<void(const core::UiTheme&)> callback)
@@ -207,7 +203,7 @@ void ThemePreviewScreen::mount(lv_obj_t* parent)
     lv_obj_set_flex_grow(schemaNameField_, 1);
     lv_textarea_set_one_line(schemaNameField_, true);
     lv_textarea_set_max_length(schemaNameField_, 32);
-    lv_textarea_set_text(schemaNameField_, theme_.name.c_str());
+    lv_textarea_set_text(schemaNameField_, suggestedName_.c_str());
     lv_obj_set_style_text_font(schemaNameField_, theme_.fonts.contentSubheader, 0);
     lv_obj_set_style_text_color(schemaNameField_, theme_.colors.contentFg, 0);
     lv_obj_set_style_bg_color(schemaNameField_, theme_.colors.contentBg, 0);
@@ -234,69 +230,6 @@ void ThemePreviewScreen::mount(lv_obj_t* parent)
     lv_obj_set_style_text_font(statusLabel_, theme_.fonts.content, 0);
     lv_obj_set_style_text_color(statusLabel_, theme_.colors.contentFg, 0);
     lv_obj_set_style_pad_left(statusLabel_, 10, 0);
-
-    lv_obj_t* selectorRow = lv_obj_create(layout);
-    lv_obj_set_width(selectorRow, lv_pct(100));
-    lv_obj_set_height(selectorRow, LV_SIZE_CONTENT);
-    lv_obj_set_style_bg_opa(selectorRow, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(selectorRow, 0, 0);
-    lv_obj_set_style_pad_left(selectorRow, 8, 0);
-    lv_obj_set_style_pad_right(selectorRow, 8, 0);
-    lv_obj_set_style_pad_top(selectorRow, 0, 0);
-    lv_obj_set_style_pad_bottom(selectorRow, 0, 0);
-    lv_obj_set_style_pad_column(selectorRow, 8, 0);
-    lv_obj_set_flex_flow(selectorRow, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(selectorRow, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-
-    lv_obj_t* selectorLabel = lv_label_create(selectorRow);
-    lv_label_set_text_static(selectorLabel, "Load theme:");
-    lv_obj_set_style_text_font(selectorLabel, theme_.fonts.content, 0);
-    lv_obj_set_style_text_color(selectorLabel, theme_.colors.contentFg, 0);
-
-    schemeDropdown_ = lv_dropdown_create(selectorRow);
-    lv_obj_set_height(schemeDropdown_, 52);
-    lv_obj_set_flex_grow(schemeDropdown_, 1);
-    lv_obj_set_style_text_font(schemeDropdown_, &lv_font_montserrat_16, LV_PART_MAIN);
-    lv_obj_set_style_text_font(schemeDropdown_, &lv_font_montserrat_16, LV_PART_SELECTED);
-    lv_obj_set_style_text_color(schemeDropdown_, theme_.colors.contentFg, 0);
-    lv_obj_set_style_bg_color(schemeDropdown_, theme_.colors.contentBg, 0);
-    lv_obj_set_style_border_color(schemeDropdown_, theme_.colors.shadow, 0);
-    lv_dropdown_set_dir(schemeDropdown_, LV_DIR_BOTTOM);
-    lv_obj_set_style_pad_ver(schemeDropdown_, 10, LV_PART_MAIN);
-
-    if (onThemeListRequested_) {
-        availableThemes_ = onThemeListRequested_();
-    }
-    if (availableThemes_.empty()) {
-        availableThemes_.push_back(theme_);
-    }
-
-    String options;
-    int selectedIndex = 0;
-    for (size_t i = 0; i < availableThemes_.size(); ++i) {
-        if (options.length() != 0) {
-            options += "\n";
-        }
-        options += availableThemes_[i].name;
-
-        if ((theme_.id.length() != 0 && availableThemes_[i].id == theme_.id) ||
-            (availableThemes_[i].name == theme_.name)) {
-            selectedIndex = static_cast<int>(i);
-        }
-    }
-    lv_dropdown_set_options(schemeDropdown_, options.c_str());
-    lv_dropdown_set_selected(schemeDropdown_, static_cast<uint16_t>(selectedIndex));
-    lv_obj_add_event_cb(schemeDropdown_, onSchemeDropdownChanged, LV_EVENT_VALUE_CHANGED, this);
-
-    if (lv_obj_t* list = lv_dropdown_get_list(schemeDropdown_)) {
-        lv_obj_set_style_max_height(list, 260, 0);
-        lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_ACTIVE);
-        lv_obj_clear_flag(list, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
-        lv_obj_set_style_text_font(list, &lv_font_montserrat_16, 0);
-        lv_obj_set_style_pad_row(list, 8, 0);
-        lv_obj_set_style_bg_color(list, theme_.colors.contentBg, 0);
-        lv_obj_set_style_text_color(list, theme_.colors.contentFg, 0);
-    }
 
     // Tabview filling the entire body slot
     lv_obj_t* tabview = lv_tabview_create(layout, LV_DIR_TOP, 48);
@@ -588,34 +521,6 @@ void ThemePreviewScreen::onFontDropdownChanged(lv_event_t* event)
 }
 
 void ThemePreviewScreen::onSchemeDropdownChanged(lv_event_t* event)
-{
-    auto* self = static_cast<ThemePreviewScreen*>(lv_event_get_user_data(event));
-    if (self == nullptr) {
-        return;
-    }
-
-    lv_obj_t* dropdown = self->schemeDropdown_;
-    if (dropdown == nullptr) {
-        return;
-    }
-    const uint16_t selectedIndex = lv_dropdown_get_selected(dropdown);
-    if (selectedIndex >= self->availableThemes_.size()) {
-        return;
-    }
-
-    self->theme_ = self->availableThemes_[selectedIndex];
-    self->applyLiveTheme(self->theme_);
-    self->applyThemeToInputs(self->theme_);
-    if (self->onThemeApplyRequested_) {
-        self->onThemeApplyRequested_(self->theme_);
-    }
-    self->hideKeyboard();
-    if (self->statusLabel_) {
-        lv_label_set_text_fmt(self->statusLabel_, "Loaded theme: %s", self->theme_.name.c_str());
-        lv_obj_set_style_text_color(self->statusLabel_, self->theme_.colors.contentFg, 0);
-    }
-}
-
 void ThemePreviewScreen::onColorPickerCancelEvent(lv_event_t* event)
 {
     auto* self = static_cast<ThemePreviewScreen*>(lv_event_get_user_data(event));

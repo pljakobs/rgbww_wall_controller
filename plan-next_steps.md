@@ -213,6 +213,7 @@ Issues:
   - fixed: brightness changes are written to ConfigDB 250 ms after slider release
    
   - fixed: calibration now auto-closes after the fifth crosshair is captured and saved
+  - fixed: calibration auto-close now defers close until touch release to prevent immediate click-through reopen from Settings
   - fixed: calibration now shows a dimmed cross-hair at the detected touch position on screen
   - fixed: settings screen OK/Cancel are functional (OK saves; Cancel restores preview brightness and closes)
 
@@ -230,6 +231,7 @@ Code review issues (maintainability + clarity):
   - fixed: document Controllers::addOrUpdate merge semantics for empty name/ip updates
   - open: introduce a lightweight test target and smoke tests for navigation/calibration/settings persistence flows
   - fixed: hue slider mapping corrected (slider direction now matches displayed hue strip)
+  - fixed: top-level docs refreshed for current architecture and workflows (README.MD, framework.md)
 
 
 add features:

@@ -1,139 +1,76 @@
-# Product App RGBWW - Integration Notes
+# rgbww_wall_panel
 
-This file documents the bring-up and integration work completed so far for the GUITION ESP32-S3-4848S040 target.
+LVGL-based wall panel firmware for ESP32-S3 (GUITION 4848S040) built with Sming.
 
-## Current Status
+## Current State
 
-- Boot is stable on ESP32-S3 with OPI PSRAM enabled.
-- RGB panel init no longer crashes in ESP-IDF cleanup path.
-- LVGL v8.4.0 is integrated and running through custom adapters.
-- EEZ-generated UI from sibling repo `rgbww` is wired into app startup.
-- Color rendering issue (segmented colorwheel) is fixed.
+- UI is handwritten C++ (no EEZ-generated runtime wiring in the active path).
+- Navigation and screen construction are split across AppUi, AppNavigator, and ScreenFactory.
+- Network Info updates are event-driven and debounced.
+- Display settings and touch calibration persistence are handled by DisplaySettingsService.
+- Theme list/apply/save is backed by ConfigDB and AppData.
 
-## Hardware Target
+## Build
 
-- SoC: ESP32-S3
-- Panel: ST7701S over 3-wire SPI init + 16-bit RGB interface
-- Resolution: 480x480
-- Touch: GT911 (I2C)
-- PSRAM: 8MB OPI
-- Backlight: GPIO38 (active high)
-
-## Key Fixes Applied
-
-### 1) ESP-IDF RGB panel crash fix (LoadProhibited)
-
-Issue:
-- Null pointer dereference in `lcd_rgb_panel_destory()` when framebuffer allocation failed before HAL init.
-
-Fix:
-- Added null guard around `lcd_ll_enable_clock(rgb_panel->hal.dev, false)`.
-
-Patch file:
-- `patches/esp-idf-lcd_rgb_panel_rgb-null-hal-dev.patch`
-
-### 2) Sming SDK component linkage
-
-Issue:
-- `esp_lcd` and `esp_psram` were not guaranteed in shared SDK component build.
-
-Fix:
-- Added both components to Sming SDK component list.
-
-Patch file:
-- `patches/sming-sdk-add-esp_lcd-esp_psram-components.patch`
-
-### 3) LVGL runtime watchdog + flush synchronization
-
-Issues:
-- Task watchdog resets due to handler scheduling under unicore settings.
-- Segmented widget rendering when LVGL draw buffer became reusable before transfer completion.
-
-Fixes:
-- Handler task adapted for unicore-safe behavior and non-zero delay ticks.
-- Flush callback now waits for `display_driver_wait_flush_complete()` before `lv_disp_flush_ready()`.
-
-### 4) Panel color format alignment
-
-Issue:
-- Basic colors looked mostly correct, but colorwheel gradient appeared sectorized/broken.
-
-Fix:
-- Aligned panel device `bits_per_pixel` to 18 (RGB666) while keeping 16-bit RGB bus transfer path.
-- This matches the reference ESP32_Display_Panel configuration pattern for this board.
-
-## Integration Architecture
-
-### App level
-
-- `app/application.cpp`
-  - Turns backlight on (GPIO38)
-  - Calls `esp_lcd_adapter_init(480, 480)`
-  - Calls `ui_init()` from EEZ UI component
-
-### Adapter chain
-
-- `esp_lcd_adapter`
-  - Creates and initializes board display driver
-  - Starts LVGL runtime adapter
-
-- `lvgl_runtime_adapter`
-  - Owns LVGL display/input runtime
-  - Allocates PSRAM draw buffers
-  - Runs LVGL handler task
-  - Flushes through abstract `display_driver_t`
-
-- `display_driver_guition_4848s040`
-  - ST7701S panel bring-up and RGB timing config
-  - Implements `display_driver_t` contract
-
-- `rgbww`
-  - EEZ-generated UI sources (`src/ui/*`)
-
-## Component Wiring
-
-Project component dependencies now include:
-- `esp_lcd_adapter`
-- `rgbww`
-
-Transitive dependencies include:
-- `lvgl_runtime_adapter`
-- `display_driver_guition_4848s040`
-- `lvgl`
-
-## LVGL Configuration
-
-- `libs/lv_conf.h`
-  - `LV_COLOR_DEPTH = 16`
-  - `LV_COLOR_16_SWAP = 0`
-  - `LV_TICK_CUSTOM = 1` via `esp_timer_get_time()`
-  - Widgets/features enabled for current UI
-
-## Build Notes
-
-Use normal build command:
+From project root:
 
 ```bash
-cd /home/pjakobs/devel/product_app_rgbww
-make
+make SMING_ARCH=Esp32
 ```
 
-Do not rely on truncating pipelines like `make | grep ... | head ...` for final build success checks. If output consumers terminate early, build subprocesses can be interrupted and leave partial artifacts.
+If you need a clean rebuild:
 
-## Relevant Paths
+```bash
+make clean SMING_ARCH=Esp32
+make SMING_ARCH=Esp32
+```
 
-- App entry: `app/application.cpp`
-- Project config: `component.mk`
-- LVGL config: `libs/lv_conf.h`
-- LVGL runtime: `../lvgl_runtime_adapter/src/lvgl_runtime_adapter.c`
-- LCD adapter: `../esp_lcd_adapter/src/esp_lcd_adapter.c`
-- Board driver: `../display_driver_guition_4848s040/src/display_driver_guition_4848s040.c`
-- EEZ UI: `../rgbww/src/ui/`
-- Patches: `patches/`
+## Runtime Architecture
 
-## Next Suggested Work
+Top-level composition starts in app/application.cpp:
 
-- Add GT911 touch callback wiring into `lvgl_runtime_adapter_set_touch_cb()`.
-- Replace direct GPIO backlight toggle with dedicated backlight driver API.
-- Add a minimal smoke test screen and boot self-check logs.
-- Optionally split this README into user-facing and developer-facing docs.
+- Creates ConfigDB roots (AppConfig, AppData)
+- Builds AppUi, HardwareInitService, UiRuntimeService, AppWIFI, WifiConfigFlow, NetworkUiBinder
+- Loads persisted display settings and touch calibration
+- Initializes hardware
+- Initializes UI under UiRuntimeService lock discipline
+- Binds WiFi callbacks and synchronizes initial state to UI
+
+Detailed class relationships, event flows, and extension patterns are documented in framework.md.
+
+## Where Things Live
+
+- App bootstrap and wiring: app/application.cpp
+- Hardware lifecycle: app/HardwareInitService.h, app/HardwareInitService.cpp
+- UI thread gateway: app/UiRuntimeService.h, app/UiRuntimeService.cpp
+- Display settings + calibration persistence: app/DisplaySettingsService.h, app/DisplaySettingsService.cpp
+- WiFi -> UI event binding: app/NetworkUiBinder.h, app/NetworkUiBinder.cpp
+- UI root facade: src/ui/AppUi.h, src/ui/AppUi.cpp
+- Navigation: src/ui/AppNavigator.h, src/ui/AppNavigator.cpp
+- Screen assembly: src/ui/ScreenFactory.h, src/ui/ScreenFactory.cpp
+- Canonical UI state store: src/ui/UiStateStore.h, src/ui/UiStateStore.cpp
+- Network presenter: src/ui/NetworkInfoPresenter.h, src/ui/NetworkInfoPresenter.cpp
+- Screen implementations: src/ui/screens/
+- UI scaffold generator: tools/ui_scaffold.py
+- Menu registry for generator: tools/ui_menus.json
+
+## Adding UI Elements
+
+Two supported paths:
+
+1. Manual path (recommended for non-trivial screens)
+- Add/modify screen class in src/ui/screens
+- Wire callbacks in ScreenFactory
+- Add route transition in AppNavigator
+- Expose trigger from existing screen (often MainScreen)
+
+2. Generator-assisted path (fast scaffold)
+- Use tools/ui_scaffold.py to generate a screen and optional wiring stubs
+- Review and adjust generated code before commit
+
+See framework.md for concrete commands and step-by-step examples.
+
+## Notes
+
+- Repository includes external components under Components; do not update vendor docs when changing app logic.
+- There may be unrelated dirty submodule pointers in local workspace state; keep commits focused on app files.

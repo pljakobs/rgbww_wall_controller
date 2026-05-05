@@ -89,13 +89,22 @@ void TouchCalibrationScreen::mount(lv_obj_t* parent)
 void TouchCalibrationScreen::onCaptureTapEvent(lv_event_t* event)
 {
     auto* self = static_cast<TouchCalibrationScreen*>(lv_event_get_user_data(event));
-    if (self == nullptr || self->captureIndex_ >= 5) {
+    if (self == nullptr) {
         return;
     }
 
     const lv_event_code_t code = lv_event_get_code(event);
     if (code == LV_EVENT_RELEASED) {
         self->touchCapturedForCurrentPress_ = false;
+        if (self->closeOnRelease_) {
+            self->closeOnRelease_ = false;
+            if (self->onCloseRequested_) {
+                self->onCloseRequested_();
+            }
+        }
+        return;
+    }
+    if (self->captureIndex_ >= 5) {
         return;
     }
     if (code != LV_EVENT_PRESSED && code != LV_EVENT_PRESSING) {
@@ -150,14 +159,15 @@ void TouchCalibrationScreen::onCaptureTapEvent(lv_event_t* event)
         if (self->instructionLabel_ != nullptr) {
             lv_label_set_text_static(self->instructionLabel_, "save failed - touch colored cross");
         }
+        self->closeOnRelease_ = false;
         self->captureIndex_ = 0;
         self->updateCrossStates();
         return;
     }
 
-    if (self->onCloseRequested_) {
-        self->onCloseRequested_();
-    }
+    // Defer close until release so the same touch can't click through
+    // to the Settings screen's calibration button and reopen immediately.
+    self->closeOnRelease_ = true;
 }
 
 void TouchCalibrationScreen::updateCrossStates()

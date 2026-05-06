@@ -37,12 +37,15 @@ bool AppUi::init()
     navigator_ = std::make_unique<AppNavigator>(
         root_, state_, currentColor_, theme_, onThemeSaveRequested_, onThemeListRequested_,
         [this](const core::UiTheme& theme) {
-            setTheme(theme);
+            // Callback may come from screen-owned storage that gets invalidated
+            // by setTheme() remounting screens, so copy before applying.
+            core::UiTheme selectedTheme = theme;
             // Persist only concrete theme selections (selector apply).
             // Editor live preview may emit themes with empty ids.
-            if (onThemeApplyRequested_ && theme.id.length() != 0) {
-                onThemeApplyRequested_(theme);
+            if (onThemeApplyRequested_ && selectedTheme.id.length() != 0) {
+                onThemeApplyRequested_(selectedTheme);
             }
+            setTheme(selectedTheme);
         },
         onSettingsLoadRequested_ ? onSettingsLoadRequested_ : [](int& brightness, int& timeout) {
             brightness = lightinator::policy::kDefaultBrightnessPercent;

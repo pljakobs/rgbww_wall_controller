@@ -264,7 +264,8 @@ void ThemeSelectorScreen::onApplyButtonEvent(lv_event_t* event)
 
     const uint16_t idx = lv_dropdown_get_selected(self->schemeDropdown_);
     if (idx < self->availableThemes_.size() && self->onThemeApplyRequested_) {
-        self->onThemeApplyRequested_(self->availableThemes_[idx]);
+        core::UiTheme selected = self->availableThemes_[idx];
+        self->onThemeApplyRequested_(selected);
     }
 }
 
@@ -275,7 +276,7 @@ void ThemeSelectorScreen::onEditButtonEvent(lv_event_t* event)
 
     const uint16_t idx = lv_dropdown_get_selected(self->schemeDropdown_);
     if (idx < self->availableThemes_.size() && self->onThemeEditRequested_) {
-        const core::UiTheme& selected = self->availableThemes_[idx];
+        core::UiTheme selected = self->availableThemes_[idx];
         self->onThemeEditRequested_(selected, self->computeSuggestedName(selected));
     }
 }
